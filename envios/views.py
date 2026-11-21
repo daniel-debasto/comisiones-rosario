@@ -70,24 +70,33 @@ def optimizar_ruta_ia(request):
             - "consejo": un resumen muy corto (máximo 2 oraciones) explicando por qué acceso conviene entrar y el recorrido sugerido.
             """
 
-            try:
-                client = genai.Client(api_key=settings.GEMINI_API_KEY)
-                response = client.models.generate_content(
-                    model='gemini-3.8-flash',
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                    ),
-                )
-                resultado = json.loads(response.text)
-                ids_ordenados = resultado.get("ids_ordenados", [])
+            client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            modelos_respaldo = ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite']
+            exito = False
 
-                for posicion, comision_id in enumerate(ids_ordenados, start=1):
-                    Comision.objects.filter(id=comision_id).update(orden_ia=posicion)
+            for nombre_modelo in modelos_respaldo:
+                try:
+                    response = client.models.generate_content(
+                        model=nombre_modelo,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                        ),
+                    )
+                    resultado = json.loads(response.text)
+                    ids_ordenados = resultado.get("ids_ordenados", [])
 
-                request.session['consejo_ia'] = resultado.get("consejo", "Ruta optimizada por cercanía y horarios.")
-            except Exception as e:
-                request.session['consejo_ia'] = f"No se pudo conectar con la IA en este momento: {str(e)}"
+                    for posicion, comision_id in enumerate(ids_ordenados, start=1):
+                        Comision.objects.filter(id=comision_id).update(orden_ia=posicion)
+
+                    request.session['consejo_ia'] = resultado.get("consejo", "Ruta optimizada por cercanía y horarios.")
+                    exito = True
+                    break
+                except Exception:
+                    continue
+
+            if not exito:
+                request.session['consejo_ia'] = "Los servidores de IA están muy saturados ahora. Volvé a tocar el botón en unos segundos."
 
     return redirect('hoja_de_ruta')
 
