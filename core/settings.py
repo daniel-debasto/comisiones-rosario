@@ -130,3 +130,6 @@ MAILERS = {
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 CSRF_TRUSTED_ORIGINS = ['https://*.devtunnels.ms', 'https://*.pythonanywhere.com']
 
+import os
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+
