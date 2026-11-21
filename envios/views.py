@@ -1,11 +1,35 @@
 import json
+import math
+import urllib.request
+import urllib.parse
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import F, Sum
 from django.utils import timezone
 from google import genai
-from google.genai import types
 from .models import Comision, Cliente
+
+
+def geocodificar_rosario(direccion):
+    """Obtiene (lat, lon) reales de una calle en Rosario usando OpenStreetMap gratis."""
+    query = urllib.parse.quote(f"{direccion}, Rosario, Santa Fe, Argentina")
+    url = f"https://openstreetmap.org{query}&format=json&limit=1"
+    req = urllib.request.Request(url, headers={'User-Agent': 'ComisionesFirmatApp/1.0'})
+    try:
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            data = json.loads(resp.read().decode())
+            if data:
+                return float(data[0]['lat']), float(data[0]['lon'])
+    except Exception:
+        pass
+    return None
+
+
+def distancia_km(coord1, coord2):
+    """Calcula distancia aproximada en km entre dos puntos (lat, lon)."""
+    lat1, lon1 = coord1
+    lat2, lon2 = coord2
+    return math.hypot((lat2 - lat1) * 111.0, (lon2 - lon1) * 95.0)
 
 
 def hoja_de_ruta(request):
@@ -49,54 +73,61 @@ def optimizar_ruta_ia(request):
         hoy = timezone.localdate()
         pendientes = list(Comision.objects.filter(fecha_viaje=hoy, estado='PENDIENTE'))
 
-        if len(pendientes) > 1 and settings.GEMINI_API_KEY:
-            lista_paradas = []
-            for p in pendientes:
-                lista_paradas.append({
-                    "id": p.id,
-                    "direccion": p.direccion_entrega,
-                    "hora_limite": p.hora_limite.strftime("%H:%M") if p.hora_limite else "Sin horario fijo",
-                    "notas": p.notas or ""
-                })
+        if len(pendientes) > 1:
+            # 1. Separar las que tienen hora límite (van primero ordenadas por horario)
+            con_hora = sorted([p for p in pendientes if p.hora_limite], key=lambda x: x.hora_limite)
+            sin_hora = [p for p in pendientes if not p.hora_limite]
 
-            prompt = f"""
-            Sos un experto en logística y geografía urbana de Rosario, Santa Fe, Argentina.
-            Un comisionista viene desde Firmat (puede ingresar por Ruta 33 / Pérez o por AO12 / Av. Ovidio Lagos) y tiene estas direcciones para visitar hoy:
-            {json.dumps(lista_paradas, ensure_ascii=False)}
+            # 2. Punto de partida: Entrada desde Firmat (Ruta 33 / Av. Pte. Perón y Circunvalación)
+            punto_actual = (-32.9565, -60.7280)
+            if con_hora:
+                coord_ultima_urgente = geocodificar_rosario(con_hora[-1].direccion_entrega)
+                if coord_ultima_urgente:
+                    punto_actual = coord_ultima_urgente
 
-            Ubicá geográficamente cada dirección en Rosario y ordená los IDs para armar la ruta más corta y lógica sin cruzar la ciudad dos veces, respetando estrictamente las entregas que tienen 'hora_limite' más temprana.
-            Devolvé únicamente un JSON con dos claves:
-            - "ids_ordenados": lista de enteros con los IDs en el orden óptimo.
-            - "consejo": un resumen muy corto (máximo 2 oraciones) explicando por qué acceso conviene entrar y el recorrido sugerido.
-            """
+            # 3. Geocodificar y ordenar por cercanía real (Vecino más cercano)
+            con_coords = []
+            sin_coords = []
+            for p in sin_hora:
+                c = geocodificar_rosario(p.direccion_entrega)
+                if c:
+                    con_coords.append((p, c))
+                else:
+                    sin_coords.append(p)
 
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            modelos_respaldo = ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite']
-            exito = False
+            ordenadas_geo = []
+            while con_coords:
+                mas_cercana = min(con_coords, key=lambda item: distancia_km(punto_actual, item[1]))
+                ordenadas_geo.append(mas_cercana[0])
+                punto_actual = mas_cercana[1]
+                con_coords.remove(mas_cercana)
 
-            for nombre_modelo in modelos_respaldo:
-                try:
-                    response = client.models.generate_content(
-                        model=nombre_modelo,
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                        ),
-                    )
-                    resultado = json.loads(response.text)
-                    ids_ordenados = resultado.get("ids_ordenados", [])
+            ruta_final = con_hora + ordenadas_geo + sin_coords
 
-                    for posicion, comision_id in enumerate(ids_ordenados, start=1):
-                        Comision.objects.filter(id=comision_id).update(orden_ia=posicion)
+            for posicion, comision in enumerate(ruta_final, start=1):
+                Comision.objects.filter(id=comision.id).update(orden_ia=posicion)
 
-                    request.session['consejo_ia'] = resultado.get("consejo", "Ruta optimizada por cercanía y horarios.")
-                    exito = True
-                    break
-                except Exception:
-                    continue
+            # 4. Pedir a Gemini un resumen corto basado en la ruta ya calculada
+            resumen_direcciones = " -> ".join([p.direccion_entrega for p in ruta_final])
+            consejo_texto = f"Ruta ordenada por cercanía real entrando desde Ruta 33: {resumen_direcciones}."
 
-            if not exito:
-                request.session['consejo_ia'] = "Los servidores de IA están muy saturados ahora. Volvé a tocar el botón en unos segundos."
+            if settings.GEMINI_API_KEY:
+                client = genai.Client(api_key=settings.GEMINI_API_KEY)
+                prompt = f"""
+                Sos un asistente logístico en Rosario, Santa Fe. Un comisionista que viene desde Firmat (Ruta 33 / Av. Pte. Perón) tiene este recorrido ya ordenado por GPS:
+                {resumen_direcciones}
+                Escribí un consejo práctico de máximo 2 oraciones cortas indicando por qué arterias principales conviene moverse para hacer estas paradas rápido.
+                """
+                for modelo in ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite']:
+                    try:
+                        resp = client.models.generate_content(model=modelo, contents=prompt)
+                        if resp.text:
+                            consejo_texto = resp.text.strip()
+                            break
+                    except Exception:
+                        continue
+
+            request.session['consejo_ia'] = consejo_texto
 
     return redirect('hoja_de_ruta')
 
