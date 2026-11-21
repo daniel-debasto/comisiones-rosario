@@ -49,16 +49,6 @@
             <input type="text" name="direccion_entrega" placeholder="Ej: Córdoba 1450" required>
         </div>
 
-        <div class="campo">
-            <label>🗺️ Zona</label>
-            <select name="zona">
-                <option value="">-- Seleccionar zona --</option>
-                {% for z in zonas %}
-                    <option value="{{ z.id }}">{{ z.nombre }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="campo">
                 <label>⏰ Hora límite (opcional)</label>

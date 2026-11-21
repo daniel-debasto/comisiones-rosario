@@ -5,7 +5,7 @@ from django.db.models import F, Sum
 from django.utils import timezone
 from google import genai
 from google.genai import types
-from .models import Comision, Cliente, Zona
+from .models import Comision, Cliente
 
 
 def hoja_de_ruta(request):
@@ -17,7 +17,7 @@ def hoja_de_ruta(request):
     ).order_by(
         'orden_ia',
         F('hora_limite').asc(nulls_last=True),
-        'zona__orden_recorrido'
+        'id'
     )
 
     entregadas = Comision.objects.filter(
@@ -55,20 +55,19 @@ def optimizar_ruta_ia(request):
                 lista_paradas.append({
                     "id": p.id,
                     "direccion": p.direccion_entrega,
-                    "zona": p.zona.nombre if p.zona else "Sin zona",
                     "hora_limite": p.hora_limite.strftime("%H:%M") if p.hora_limite else "Sin horario fijo",
                     "notas": p.notas or ""
                 })
 
             prompt = f"""
-            Sos un experto en logística y calles de Rosario, Santa Fe, Argentina.
-            Un comisionista viene desde Firmat (ingresando por Ruta 33 / Pérez o por AO12 / Av. Ovidio Lagos) y tiene estas entregas pendientes hoy:
+            Sos un experto en logística y geografía urbana de Rosario, Santa Fe, Argentina.
+            Un comisionista viene desde Firmat (puede ingresar por Ruta 33 / Pérez o por AO12 / Av. Ovidio Lagos) y tiene estas direcciones para visitar hoy:
             {json.dumps(lista_paradas, ensure_ascii=False)}
 
-            Ordená los IDs de las entregas para minimizar kilómetros y evitar cruzar la ciudad dos veces, respetando estrictamente las entregas que tienen 'hora_limite' más temprana.
+            Ubicá geográficamente cada dirección en Rosario y ordená los IDs para armar la ruta más corta y lógica sin cruzar la ciudad dos veces, respetando estrictamente las entregas que tienen 'hora_limite' más temprana.
             Devolvé únicamente un JSON con dos claves:
             - "ids_ordenados": lista de enteros con los IDs en el orden óptimo.
-            - "consejo": un resumen muy corto (máximo 2 oraciones) explicando por dónde conviene entrar y el orden sugerido.
+            - "consejo": un resumen muy corto (máximo 2 oraciones) explicando por qué acceso conviene entrar y el recorrido sugerido.
             """
 
             try:
@@ -94,15 +93,11 @@ def optimizar_ruta_ia(request):
 
 
 def nueva_comision(request):
-    zonas = Zona.objects.all()
     clientes = Cliente.objects.all().order_by('nombre')
 
     if request.method == 'POST':
         nombre_cliente = request.POST.get('cliente_nombre', '').strip()
         cliente_obj, _ = Cliente.objects.get_or_create(nombre=nombre_cliente)
-
-        zona_id = request.POST.get('zona')
-        zona_obj = Zona.objects.filter(id=zona_id).first() if zona_id else None
 
         hora = request.POST.get('hora_limite') or None
         monto = request.POST.get('monto') or 0
@@ -112,7 +107,6 @@ def nueva_comision(request):
             cliente=cliente_obj,
             tipo=request.POST.get('tipo', 'SOBRE'),
             direccion_entrega=request.POST.get('direccion_entrega'),
-            zona=zona_obj,
             hora_limite=hora,
             monto=monto,
             pagado=('pagado' in request.POST),
@@ -121,7 +115,6 @@ def nueva_comision(request):
         return redirect('hoja_de_ruta')
 
     return render(request, 'envios/nueva_comision.html', {
-        'zonas': zonas,
         'clientes': clientes,
     })
 

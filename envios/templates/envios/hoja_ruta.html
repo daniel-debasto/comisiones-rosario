@@ -81,8 +81,8 @@
 
     {% for item in pendientes %}
     <div class="card {% if item.hora_limite %}urgente{% endif %}">
-        <div class="badges">
-            <span class="badge badge-zona">📍 {{ item.zona|default:"Sin zona" }}</span>
+    <div class="badges">
+            <span class="badge badge-zona">🏁 Parada #{{ forloop.counter }}</span>
             {% if item.hora_limite %}
                 <span class="badge badge-hora">⏰ Antes de {{ item.hora_limite|time:"H:i" }}</span>
             {% else %}
