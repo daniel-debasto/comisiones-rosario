@@ -49,6 +49,9 @@ class Comision(models.Model):
     monto = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     pagado = models.BooleanField(default=False)
     notas = models.TextField(blank=True, null=True)
+    notas = models.TextField(blank=True, null=True)
+    orden_ia = models.PositiveIntegerField(default=99)
+
 
     def __str__(self):
         return f"{self.cliente} - {self.direccion_entrega} ({self.estado})"
