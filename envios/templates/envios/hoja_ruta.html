@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoja de Ruta - Firmat / Rosario</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f1f5f9; color: #1e293b; padding-bottom: 40px; }
+        .navbar { background-color: #0f172a; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        .navbar-title { font-weight: 700; font-size: 1.1rem; }
+        .btn-nueva { background-color: #f59e0b; color: #0f172a; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; }
+        .container { max-width: 560px; margin: 0 auto; padding: 16px; }
+        .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .caja-box { background: white; padding: 14px; border-radius: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .caja-label { font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px; }
+        .caja-valor-verde { color: #16a34a; font-size: 1.4rem; font-weight: 800; }
+        .caja-valor-rojo { color: #dc2626; font-size: 1.4rem; font-weight: 800; }
+        .seccion-titulo { font-size: 0.85rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 12px; letter-spacing: 0.5px; }
+        .card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); border-left: 6px solid #3b82f6; }
+        .card.urgente { border-left-color: #dc2626; }
+        .badges { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+        .badge-zona { background: #dbeafe; color: #1d4ed8; }
+        .badge-hora { background: #fee2e2; color: #b91c1c; }
+        .badge-libre { background: #f1f5f9; color: #475569; }
+        .direccion { font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+        .cliente { color: #475569; font-size: 0.95rem; margin-bottom: 10px; }
+        .notas { background: #fef3c7; color: #92400e; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 12px; }
+        .precio-fila { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 10px; margin-bottom: 12px; }
+        .precio { font-size: 1.35rem; font-weight: 800; }
+        .estado-pago-si { background: #dcfce7; color: #15803d; }
+        .estado-pago-no { background: #fef9c3; color: #a16207; }
+        .btn { display: block; width: 100%; text-align: center; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; text-decoration: none; border: none; cursor: pointer; margin-bottom: 8px; }
+        .btn-maps { background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; }
+        .acciones-form { display: flex; gap: 8px; }
+        .btn-cobrado { background: #16a34a; color: white; flex: 2; margin-bottom: 0; }
+        .btn-entregado { background: #64748b; color: white; flex: 1; margin-bottom: 0; }
+        .vacio-box { background: white; border-radius: 14px; padding: 32px 16px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.06); }
+        .card-completada { background: white; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; opacity: 0.7; }
+        .tachado { text-decoration: line-through; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <span class="navbar-title">🚚 Ruta del Día ({{ hoy|date:"d/m" }})</span>
+                    <a href="{% url 'nueva_comision' %}" class="btn-nueva">+ Nueva</a>
+</nav>
+
+<div class="container">
+
+    <div class="resumen">
+        <div class="caja-box">
+            <span class="caja-label">Cobrado hoy</span>
+            <span class="caja-valor-verde">${{ total_cobrado }}</span>
+        </div>
+        <div class="caja-box">
+            <span class="caja-label">Por cobrar</span>
+            <span class="caja-valor-rojo">${{ total_pendiente_cobro }}</span>
+        </div>
+    </div>
+
+    <div class="seccion-titulo">Pendientes ({{ pendientes.count }})</div>
+
+    {% for item in pendientes %}
+    <div class="card {% if item.hora_limite %}urgente{% endif %}">
+        <div class="badges">
+            <span class="badge badge-zona">📍 {{ item.zona|default:"Sin zona" }}</span>
+            {% if item.hora_limite %}
+                <span class="badge badge-hora">⏰ Antes de {{ item.hora_limite|time:"H:i" }}</span>
+            {% else %}
+                <span class="badge badge-libre">Horario libre</span>
+            {% endif %}
+        </div>
+
+        <div class="direccion">{{ item.direccion_entrega }}</div>
+        <div class="cliente">👤 <strong>{{ item.cliente.nombre }}</strong> · {{ item.get_tipo_display }}</div>
+
+        {% if item.notas %}
+            <div class="notas">📝 {{ item.notas }}</div>
+        {% endif %}
+
+        <div class="precio-fila">
+            <span class="precio">${{ item.monto }}</span>
+            {% if item.pagado %}
+                <span class="badge estado-pago-si">Ya pagado</span>
+            {% else %}
+                <span class="badge estado-pago-no">Falta cobrar</span>
+            {% endif %}
+        </div>
+
+                <a href="https://maps.google.com/?q={{ item.direccion_entrega|urlencode }},+Rosario,+Santa+Fe" 
+           class="btn btn-maps">
+           🗺️ Abrir en Google Maps
+        </a>
+
+        <form method="POST" action="{% url 'marcar_entregado' item.id %}" class="acciones-form">
+            {% csrf_token %}
+            {% if not item.pagado %}
+                <button type="submit" name="cobrado" value="1" class="btn btn-cobrado">
+                    ✅ Entregado y Cobrado
+                </button>
+            {% endif %}
+            <button type="submit" class="btn btn-entregado">
+                📦 Entregado
+            </button>
+        </form>
+    </div>
+    {% empty %}
+        <div class="vacio-box">
+            <div style="font-size: 2.5rem; margin-bottom: 8px;">🎉</div>
+            <h3 style="color: #16a34a; margin-bottom: 6px;">¡Todo entregado por hoy!</h3>
+            <p style="color: #64748b; font-size: 0.9rem;">Tocá "+ Nueva" arriba para cargar una comisión.</p>
+        </div>
+    {% endfor %}
+
+    {% if entregadas %}
+    <div class="seccion-titulo" style="margin-top: 24px;">Completadas ({{ entregadas.count }})</div>
+    {% for item in entregadas %}
+        <div class="card-completada">
+            <div>
+                <div class="tachado">{{ item.direccion_entrega }}</div>
+                <small style="color: #64748b;">{{ item.cliente.nombre }} · ${{ item.monto }}</small>
+            </div>
+            <span class="badge {% if item.pagado %}estado-pago-si{% else %}estado-pago-no{% endif %}">
+                {% if item.pagado %}Cobrado{% else %}Debe{% endif %}
+            </span>
+        </div>
+    {% endfor %}
+    {% endif %}
+
+</div>
+</body>
+</html>
