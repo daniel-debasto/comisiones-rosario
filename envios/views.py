@@ -24,7 +24,6 @@ def obtener_fecha_seleccionada(request):
 def redirigir_con_fecha(fecha_obj):
     return redirect(f"{reverse('hoja_de_ruta')}?fecha={fecha_obj.isoformat()}")
 
-
 def construir_url_ruta_completa(pendientes):
     """Genera un link único de Google Maps con todas las paradas pendientes en orden."""
     lista = list(pendientes)
@@ -34,8 +33,17 @@ def construir_url_ruta_completa(pendientes):
         urllib.parse.quote(f"{p.direccion_entrega}, Rosario, Santa Fe, Argentina")
         for p in lista
     ]
-    # Google Maps soporta hasta 10 paradas seguidas en /maps/dir/
-    return "https://google.com" + "/".join(paradas_url[:10])
+    base_url = "https://google.com" + "/maps/dir/"
+    return base_url + "/".join(paradas_url[:10])
+
+def agregar_links_gps(pendientes):
+    """Genera las URLs exactas de Maps y Waze en Python para evitar recortes en HTML."""
+    lista = list(pendientes)
+    for item in lista:
+        q = urllib.parse.quote(f"{item.direccion_entrega}, Rosario, Santa Fe")
+        item.url_maps = "https://google.com" + "/maps/search/?api=1&query=" + q
+        item.url_waze = "https://waze.com" + "/ul?q=" + q + "&navigate=yes"
+    return lista
 
 
 def hoja_de_ruta(request):
@@ -64,14 +72,15 @@ def hoja_de_ruta(request):
     ).aggregate(Sum('monto'))['monto__sum'] or 0
 
     deudores_count = Comision.objects.filter(pagado=False, monto__gt=0).values('cliente').distinct().count()
-    url_ruta_completa = construir_url_ruta_completa(pendientes)
+    pendientes_lista = agregar_links_gps(pendientes)
+    url_ruta_completa = construir_url_ruta_completa(pendientes_lista)
     consejo_ia = request.session.pop('consejo_ia', None)
 
     contexto = {
         'hoy': hoy,
         'manana': manana,
         'fecha_sel': fecha_sel,
-        'pendientes': pendientes,
+        'pendientes': pendientes_lista,
         'entregadas': entregadas,
         'total_cobrado': total_cobrado,
         'total_pendiente_cobro': total_pendiente_cobro,

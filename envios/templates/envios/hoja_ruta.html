@@ -165,13 +165,14 @@
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-            <a href="https://google.com{{ item.direccion_entrega|urlencode }},+Rosario,+Santa+Fe" class="btn btn-maps" style="margin-bottom: 0;">
+            <a href="{{ item.url_maps }}" class="btn btn-maps" style="margin-bottom: 0;">
                 🗺️ Google Maps
             </a>
-            <a href="https://waze.com{{ item.direccion_entrega|urlencode }},+Rosario,+Santa+Fe&navigate=yes" class="btn btn-waze" style="margin-bottom: 0;">
+            <a href="{{ item.url_waze }}" class="btn btn-waze" style="margin-bottom: 0;">
                 🚗 Waze
             </a>
         </div>
+
 
         <form method="POST" action="{% url 'marcar_entregado' item.id %}" class="acciones-form">
             {% csrf_token %}
