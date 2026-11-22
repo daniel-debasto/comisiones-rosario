@@ -1,3 +1,4 @@
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,45 +9,50 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #1e293b; padding-bottom: 40px; }
         .navbar { background-color: #0f172a; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-        .navbar-title { font-weight: 700; font-size: 1.05rem; }
-        .btn-nueva { background-color: #f59e0b; color: #0f172a; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; }
+        .navbar-title { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.3px; }
+        .btn-nueva { background-color: #f59e0b; color: #0f172a; text-decoration: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(245,158,11,0.3); }
         .fecha-bar { background: #1e293b; padding: 10px 16px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
         .fecha-pill { padding: 6px 12px; border-radius: 20px; text-decoration: none; font-size: 0.82rem; font-weight: 700; background: #334155; color: #e2e8f0; }
         .fecha-pill.activa { background: #3b82f6; color: white; }
         .fecha-input { padding: 5px 8px; border-radius: 8px; border: none; font-size: 0.82rem; font-weight: 600; background: #f8fafc; color: #0f172a; }
         .container { max-width: 560px; margin: 0 auto; padding: 16px; }
         .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-        .caja-box { background: white; padding: 14px; border-radius: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-        .caja-label { font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px; }
-        .caja-valor-verde { color: #16a34a; font-size: 1.4rem; font-weight: 800; }
-        .caja-valor-rojo { color: #dc2626; font-size: 1.4rem; font-weight: 800; }
-        .seccion-titulo { font-size: 0.85rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 12px; letter-spacing: 0.5px; }
-        .card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); border-left: 6px solid #3b82f6; }
+        .caja-box { background: white; padding: 14px; border-radius: 14px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .caja-label { font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px; letter-spacing: 0.4px; }
+        .caja-valor-verde { color: #16a34a; font-size: 1.45rem; font-weight: 800; }
+        .caja-valor-rojo { color: #dc2626; font-size: 1.45rem; font-weight: 800; }
+        .seccion-titulo { font-size: 0.82rem; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.5px; }
+        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 3px 10px rgba(15,23,42,0.06); border-left: 6px solid #3b82f6; }
         .card.urgente { border-left-color: #dc2626; }
         .badges { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 6px; flex-wrap: wrap; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.76rem; font-weight: 700; }
         .badge-zona { background: #dbeafe; color: #1d4ed8; }
         .badge-hora { background: #fee2e2; color: #b91c1c; }
         .badge-libre { background: #f1f5f9; color: #475569; }
-        .card-tools { display: flex; gap: 6px; align-items: center; }
-        .btn-mini { padding: 4px 9px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; }
+        .card-tools { display: flex; gap: 5px; align-items: center; }
+        .btn-mini { padding: 5px 8px; border-radius: 8px; font-size: 0.76rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; }
         .btn-editar { background: #f1f5f9; color: #334155; }
+        .btn-posponer { background: #fef3c7; color: #b45309; }
         .btn-borrar { background: #fee2e2; color: #b91c1c; }
-        .direccion { font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
-        .cliente { color: #475569; font-size: 0.95rem; margin-bottom: 10px; }
-        .notas { background: #fef3c7; color: #92400e; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 12px; }
-        .precio-fila { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 10px; margin-bottom: 12px; }
-        .precio { font-size: 1.35rem; font-weight: 800; }
+        .direccion { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.3px; }
+        .cliente-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; font-size: 0.92rem; color: #334155; }
+        .tipo-pill { padding: 3px 9px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+        .tipo-SOBRE { background: #e0f2fe; color: #0369a1; }
+        .tipo-BULTO { background: #ffedd5; color: #c2410c; }
+        .tipo-TRAMITE { background: #f3e8ff; color: #7e22ce; }
+        .notas { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 8px 12px; border-radius: 10px; font-size: 0.86rem; margin-bottom: 12px; }
+        .precio-fila { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 10px; margin-bottom: 12px; }
+        .precio { font-size: 1.35rem; font-weight: 800; color: #0f172a; }
         .estado-pago-si { background: #dcfce7; color: #15803d; }
         .estado-pago-no { background: #fef9c3; color: #a16207; }
-        .btn { display: block; width: 100%; text-align: center; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; text-decoration: none; border: none; cursor: pointer; margin-bottom: 8px; }
+        .btn { display: block; width: 100%; text-align: center; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.94rem; text-decoration: none; border: none; cursor: pointer; margin-bottom: 8px; }
         .btn-maps { background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; }
         .btn-waze { background: #ecfeff; color: #0e7490; border: 1.5px solid #a5f3fc; }
         .acciones-form { display: flex; gap: 8px; }
         .btn-cobrado { background: #16a34a; color: white; flex: 2; margin-bottom: 0; }
         .btn-entregado { background: #64748b; color: white; flex: 1; margin-bottom: 0; }
         .vacio-box { background: white; border-radius: 14px; padding: 32px 16px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.06); }
-        .card-completada { background: white; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; opacity: 0.75; }
+        .card-completada { background: white; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; opacity: 0.8; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
         .tachado { text-decoration: line-through; font-weight: 700; }
     </style>
 </head>
@@ -70,11 +76,11 @@
     <div class="resumen">
         <div class="caja-box">
             <span class="caja-label">Cobrado</span>
-            <span class="caja-valor-verde">${{ total_cobrado }}</span>
+            <span class="caja-valor-verde">${{ total_cobrado|floatformat:0|intcomma }}</span>
         </div>
         <div class="caja-box">
             <span class="caja-label">Por cobrar</span>
-            <span class="caja-valor-rojo">${{ total_pendiente_cobro }}</span>
+            <span class="caja-valor-rojo">${{ total_pendiente_cobro|floatformat:0|intcomma }}</span>
         </div>
     </div>
 
@@ -82,23 +88,23 @@
     <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin-bottom: 16px;">
         {% csrf_token %}
         <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
-        <button type="submit" class="btn" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; box-shadow: 0 3px 8px rgba(79, 70, 229, 0.3);">
+        <button type="submit" class="btn" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);">
             🤖 Ordenar Ruta Óptima con IA
         </button>
     </form>
     {% endif %}
 
     {% if consejo_ia %}
-    <div style="background: #eef2ff; border-left: 5px solid #4f46e5; color: #1e1b4b; padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 0.9rem;">
-        <strong>🤖 Sugerencia de Ruta:</strong> {{ consejo_ia }}
+    <div style="background: #eef2ff; border-left: 5px solid #4f46e5; color: #1e1b4b; padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 0.88rem;">
+        <strong>🤖 Info de Ruta:</strong> {{ consejo_ia }}
     </div>
     {% endif %}
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <div class="seccion-titulo" style="margin-bottom: 0;">Pendientes</div>
-        <div style="background: #0f172a; color: #f8fafc; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 800;">
-            📦 Faltan: {{ pendientes.count }} de {{ pendientes.count|add:entregadas.count }}
-        </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="seccion-titulo">Pendientes</span>
+        <span style="background: #0f172a; color: #f8fafc; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 800;">
+            📦 Faltan: {{ pendientes.count }} de {{ total_paradas }}
+        </span>
     </div>
 
     {% for item in pendientes %}
@@ -113,7 +119,11 @@
                 {% endif %}
             </div>
             <div class="card-tools">
-                <a href="{% url 'editar_comision' item.id %}" class="btn-mini btn-editar">✏️ Editar</a>
+                <a href="{% url 'editar_comision' item.id %}" class="btn-mini btn-editar">✏️</a>
+                <form method="POST" action="{% url 'posponer_manana' item.id %}" style="margin: 0;" onsubmit="return confirm('¿Pasar esta parada para mañana?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-mini btn-posponer">⏭️ Mañana</button>
+                </form>
                 <form method="POST" action="{% url 'eliminar_comision' item.id %}" style="margin: 0;" onsubmit="return confirm('¿Eliminar esta parada?');">
                     {% csrf_token %}
                     <button type="submit" class="btn-mini btn-borrar">🗑️</button>
@@ -122,18 +132,21 @@
         </div>
 
         <div class="direccion">{{ item.direccion_entrega }}</div>
-        <div class="cliente">👤 <strong>{{ item.cliente.nombre }}</strong> · {{ item.get_tipo_display }}</div>
+        <div class="cliente-row">
+            <span>👤 <strong>{{ item.cliente.nombre }}</strong></span>
+            <span class="tipo-pill tipo-{{ item.tipo }}">
+                {% if item.tipo == 'SOBRE' %}📄 Sobre{% elif item.tipo == 'BULTO' %}📦 Carga{% else %}🏛️ Trámite{% endif %}
+            </span>
+        </div>
 
         {% if item.notas %}
             <div class="notas">📝 {{ item.notas }}</div>
         {% endif %}
 
         <div class="precio-fila">
-            <span class="precio">${{ item.monto }}</span>
+            <span class="precio">${{ item.monto|floatformat:0|intcomma }}</span>
             {% if item.pagado %}
                 <span class="badge estado-pago-si">Ya pagado</span>
-            {% else %}
-                <span class="badge estado-pago-no">Falta cobrar</span>
             {% endif %}
         </div>
 
