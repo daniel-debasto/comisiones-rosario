@@ -24,17 +24,30 @@ def obtener_fecha_seleccionada(request):
 def redirigir_con_fecha(fecha_obj):
     return redirect(f"{reverse('hoja_de_ruta')}?fecha={fecha_obj.isoformat()}")
 
-def construir_url_ruta_completa(pendientes):
-    """Genera un link único de Google Maps con todas las paradas pendientes en orden."""
+ddef construir_url_ruta_completa(pendientes):
+    """Genera un link oficial de Google Maps (api=1) con origin, destination y waypoints."""
     lista = list(pendientes)
     if not lista:
         return None
-    paradas_url = [
+    
+    paradas = [
         urllib.parse.quote(f"{p.direccion_entrega}, Rosario, Santa Fe, Argentina")
         for p in lista
     ]
-    base_url = "https://google.com" + "/maps/dir/"
-    return base_url + "/".join(paradas_url[:10])
+    
+    base = "https://google.com"
+    
+    if len(paradas) == 1:
+        return f"{base}&destination={paradas[0]}"
+    
+    # La última parada es el destino final y las anteriores son paradas intermedias
+    destino = paradas[-1]
+    intermedias = "|".join(paradas[:-1][:8])  # Google Maps permite hasta 8 waypoints en móvil
+    
+    if intermedias:
+        return f"{base}&destination={destino}&waypoints={intermedias}&travelmode=driving"
+    return f"{base}&destination={destino}&travelmode=driving"
+
 
 def agregar_links_gps(pendientes):
     """Genera las URLs exactas de Maps y Waze en Python para evitar recortes en HTML."""
