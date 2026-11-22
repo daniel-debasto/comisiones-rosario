@@ -1,62 +1,11 @@
 import json
-import math
-import time
-import urllib.request
-import urllib.parse
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import F, Sum
 from django.utils import timezone
 from google import genai
+from google.genai import types
 from .models import Comision, Cliente
-
-
-def normalizar_calle(direccion):
-    """Limpia abreviaturas comunes para que OpenStreetMap encuentre la altura exacta."""
-    texto = direccion.strip()
-    reemplazos = {
-        "Av.": "Avenida",
-        "Av ": "Avenida ",
-        "Pres.": "Presidente",
-        "Pte.": "Presidente",
-        "Bv.": "Boulevard",
-        "Gral.": "General",
-        "Sta.": "Santa",
-    }
-    for corto, largo in reemplazos.items():
-        texto = texto.replace(corto, largo)
-    return texto
-
-
-def obtener_coordenadas_reales(direccion):
-    """Consulta Nominatim (OpenStreetMap) para obtener latitud y longitud reales en Rosario."""
-    calle_limpia = normalizar_calle(direccion)
-    params = urllib.parse.urlencode({
-        "q": f"{calle_limpia}, Rosario, Santa Fe, Argentina",
-        "format": "json",
-        "limit": 1,
-        "countrycodes": "ar"
-    })
-    url = f"https://openstreetmap.org?{params}"
-    req = urllib.request.Request(
-        url,
-        headers={'User-Agent': 'ComisionesFirmatRosario/2.0 (contacto@comisionesfirmat.com)'}
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            datos = json.loads(resp.read().decode('utf-8'))
-            if datos:
-                return float(datos[0]['lat']), float(datos[0]['lon'])
-    except Exception:
-        pass
-    return None
-
-
-def distancia_km(coord1, coord2):
-    """Calcula la distancia real en km entre dos puntos GPS."""
-    lat1, lon1 = coord1
-    lat2, lon2 = coord2
-    return math.hypot((lat2 - lat1) * 111.0, (lon2 - lon1) * 95.0)
 
 
 def hoja_de_ruta(request):
@@ -100,65 +49,73 @@ def optimizar_ruta_ia(request):
         hoy = timezone.localdate()
         pendientes = list(Comision.objects.filter(fecha_viaje=hoy, estado='PENDIENTE'))
 
-        if len(pendientes) > 1:
-            # 1. Las que tienen hora límite van primero ordenadas por horario
-            con_hora = sorted([p for p in pendientes if p.hora_limite], key=lambda x: x.hora_limite)
-            sin_hora = [p for p in pendientes if not p.hora_limite]
+        if len(pendientes) > 1 and settings.GEMINI_API_KEY:
+            lista_paradas = []
+            for p in pendientes:
+                lista_paradas.append({
+                    "id": p.id,
+                    "direccion": p.direccion_entrega,
+                    "hora_limite": p.hora_limite.strftime("%H:%M") if p.hora_limite else "Libre",
+                    "notas": p.notas or ""
+                })
 
-            # 2. Punto de entrada desde Firmat: Av. Pte. Perón y Circunvalación (Ruta 33)
-            punto_actual = (-32.9565, -60.7280)
-            if con_hora:
-                coord_urgente = obtener_coordenadas_reales(con_hora[-1].direccion_entrega)
-                if coord_urgente:
-                    punto_actual = coord_urgente
+            prompt = f"""
+            Sos un despachante experto en las calles y alturas de Rosario, Santa Fe, Argentina.
+            Un comisionista viene desde Firmat entrando a Rosario por Ruta 33 (Av. Presidente Peron y Circunvalacion, altura 6900 al Oeste).
 
-            # 3. Buscar coordenadas GPS reales de cada domicilio sin hora fija
-            con_coords = []
-            sin_coords = []
-            for p in sin_hora:
-                coord = obtener_coordenadas_reales(p.direccion_entrega)
-                if coord:
-                    con_coords.append((p, coord))
-                else:
-                    sin_coords.append(p)
-                time.sleep(0.5)
+            REGLAS GEOGRAFICAS OBLIGATORIAS DE ROSARIO (100 numeros = 1 cuadra):
+            1. Numeracion Este-Oeste (ej: Cordoba, Pellegrini, Av. Pte. Peron): crece hacia el OESTE desde el rio.
+               - Altura 6000-7000 = Extremo Oeste / Circunvalacion / Ruta 33 (ej: Av. Pres. Peron 6970 es la PRIMERA parada al entrar desde Firmat).
+               - Altura 3000-4500 = Oeste / Echesortu / Parque Independencia (ej: Pellegrini 3053, San Nicolas 1450).
+               - Altura 100-2000 = Centro y Macrocentro (ej: Cordoba 1852, Juan Manuel de Rosas 957).
+            2. Numeracion Norte-Sur (ej: Espana, Corrientes, San Martin, San Nicolas, Juan Manuel de Rosas): crece hacia el SUR desde el rio.
+               - Altura 100-1200 = Centro / Rio (ej: Corrientes 999, Juan Manuel de Rosas 957).
+               - Altura 1300-2000 = Macrocentro (ej: Espana 1715).
+               - Altura 2100-3500 = Zona Sur / Abasto (ej: Espana 2730, Av. San Martin 2150).
 
-            # 4. Ordenar por vecino más cercano real paso a paso
-            ordenadas_geo = []
-            while con_coords:
-                mas_cercana = min(con_coords, key=lambda item: distancia_km(punto_actual, item[1]))
-                ordenadas_geo.append(mas_cercana[0])
-                punto_actual = mas_cercana[1]
-                con_coords.remove(mas_cercana)
+            ORDEN DE PRIORIDAD:
+            - Primero van obligatoriamente las entregas que tengan 'hora_limite' distinta de 'Libre' (ordenadas de mas temprana a mas tardia).
+            - Luego ordena el resto haciendo un recorrido continuo sin volver atras: entra por Oeste (alturas 6000 -> 3000), baja a Zona Sur (alturas 2000-3000 Norte-Sur), sube por Macrocentro (1500-2000) y cierra en Centro/Rio (800-1200).
 
-            ruta_final = con_hora + ordenadas_geo + sin_coords
+            Entregas de hoy:
+            {json.dumps(lista_paradas, ensure_ascii=False)}
 
-            for posicion, comision in enumerate(ruta_final, start=1):
-                Comision.objects.filter(id=comision.id).update(orden_ia=posicion)
+            Devolve un JSON con este formato exacto:
+            {{
+                "ids_ordenados": [id1, id2, ...],
+                "consejo": "Explicacion corta de 2 oraciones sin asteriscos ni negritas sobre el recorrido."
+            }}
+            """
 
-            # 5. Generar recomendación corta con Gemini sobre la ruta ya ordenada
-            recorrido_txt = " -> ".join([p.direccion_entrega for p in ruta_final])
-            no_encontradas = [p.direccion_entrega for p in sin_coords]
-            aviso_no_ubicadas = f" (No se ubicaron en el mapa: {', '.join(no_encontradas)})" if no_encontradas else ""
-            consejo_texto = f"Orden calculado por GPS entrando desde Ruta 33.{aviso_no_ubicadas}"
+            client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            exito = False
 
-            if settings.GEMINI_API_KEY:
-                client = genai.Client(api_key=settings.GEMINI_API_KEY)
-                prompt = f"""
-                Un comisionista entra a Rosario desde Firmat (Ruta 33 / Av. Pte. Perón) y tiene este recorrido ya ordenado por GPS:
-                {recorrido_txt}
-                Escribí un consejo práctico de máximo 2 oraciones sobre qué avenidas tomar para unir estas paradas sin dar vueltas. No uses asteriscos ni negritas.
-                """
-                for modelo in ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite']:
-                    try:
-                        resp = client.models.generate_content(model=modelo, contents=prompt)
-                        if resp.text:
-                            consejo_texto = resp.text.replace('**', '').strip() + aviso_no_ubicadas
-                            break
-                    except Exception:
-                        continue
+            for modelo in ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite']:
+                try:
+                    response = client.models.generate_content(
+                        model=modelo,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            temperature=0.1,
+                        ),
+                    )
+                    resultado = json.loads(response.text)
+                    ids_ordenados = resultado.get("ids_ordenados", [])
 
-            request.session['consejo_ia'] = consejo_texto
+                    if ids_ordenados:
+                        for posicion, comision_id in enumerate(ids_ordenados, start=1):
+                            Comision.objects.filter(id=int(comision_id)).update(orden_ia=posicion)
+
+                        consejo_limpio = resultado.get("consejo", "Ruta ordenada por zonas geograficas reales.").replace('**', '')
+                        request.session['consejo_ia'] = consejo_limpio
+                        exito = True
+                        break
+                except Exception:
+                    continue
+
+            if not exito:
+                request.session['consejo_ia'] = "No se pudo conectar con Gemini en este momento. Intenta de nuevo en unos segundos."
 
     return redirect('hoja_de_ruta')
 
