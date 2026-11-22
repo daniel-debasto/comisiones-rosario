@@ -50,7 +50,7 @@
             <input type="text" id="input-cliente" name="cliente_nombre" list="lista-clientes" placeholder="Ej: Estudio Pérez" value="{{ comision.cliente.nombre|default:'' }}" required>
             <datalist id="lista-clientes">
                 {% for c in clientes %}
-                    <option value="{{ c.nombre }}">
+                    <option value="{{ c.nombre }}" data-direccion="{{ c.direccion_frecuente|default:'' }}">
                 {% endfor %}
             </datalist>
         </div>
@@ -95,6 +95,54 @@
 </div>
 
 <script>
+function autocompletarDireccionCliente() {
+    const inputCliente = document.getElementById('input-cliente');
+    const inputDir = document.getElementById('input-direccion');
+    const opciones = document.querySelectorAll('#lista-clientes option');
+    const nombreBuscado = inputCliente.value.trim().toLowerCase();
+
+    opciones.forEach(function(op) {
+        if (op.value.trim().toLowerCase() === nombreBuscado) {
+            const dirGuardada = op.getAttribute('data-direccion');
+            if (dirGuardada && !inputDir.value.trim()) {
+                inputDir.value = dirGuardada;
+            }
+        }
+    });
+}
+
+document.getElementById('input-cliente').addEventListener('change', autocompletarDireccionCliente);
+document.getElementById('input-cliente').addEventListener('input', autocompletarDireccionCliente);
+
+function capitalizar(texto) {
+    return texto.replace(/\b\w/g, function(letra) { return letra.toUpperCase(); });
+}
+
+function separarClienteYDireccion(frase) {
+    // Limpia "cliente " al inicio si el usuario lo dijo
+    let limpia = frase.replace(/^cliente\s+/i, '').replace(/\.$/, '').replace(/\s+\./g, '.').trim();
+
+    // 1. Si dijo separador explicito ("direccion", "en", "para", "calle", "avenida", "bv", "boulevard" o coma)
+    const matchSeparador = limpia.match(/^(.+?)(?:,|\s+(?:dirección|direccion|para|en|a)\s+|\s+(?=(?:av\.?|avenida|bv\.?|boulevard|calle|pasaje|pje\.?)\s+))(.+)$/i);
+    if (matchSeparador) {
+        return {
+            cliente: capitalizar(matchSeparador.item ? matchSeparador[1].trim() : matchSeparador[1].trim()),
+            direccion: capitalizar(matchSeparador[2].trim())
+        };
+    }
+
+    // 2. Si dijo de corrido "Friorep España 2730" o "Estudio Perez Cordoba 1450" (detecta palabra + numero al final)
+    const matchCalleNumero = limpia.match(/^(.+?)\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+){0,2}\s+\d{1,5}(?:\s*bis)?)$/i);
+    if (matchCalleNumero) {
+        return {
+            cliente: capitalizar(matchCalleNumero[1].trim()),
+            direccion: capitalizar(matchCalleNumero[2].trim())
+        };
+    }
+
+    return { cliente: capitalizar(limpia), direccion: '' };
+}
+
 function dictarTodo() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const btn = document.getElementById('btn-voz-todo');
@@ -116,21 +164,23 @@ function dictarTodo() {
         btn.style.background = '#fee2e2';
         btn.style.color = '#b91c1c';
         btn.style.borderColor = '#dc2626';
-        btn.textContent = '⏹️ Escuchando... Decí "Cliente ... dirección ..."';
+        btn.textContent = '⏹️ Escuchando... Decí "Cliente y Dirección"';
         estado.textContent = "";
     };
 
     recognition.onresult = function(event) {
-        const texto = event.results.item(0).item(0).transcript.replace(/\.$/, '').trim();
-        const partes = texto.split(/\b(?:dirección|direccion|para|en)\b|,/i);
+        const texto = event.results.item(0).item(0).transcript;
+        const datos = separarClienteYDireccion(texto);
 
-        if (partes.length >= 2) {
-            inputCliente.value = partes.item(0).trim();
-            inputDireccion.value = partes.slice(1).join(' ').trim();
-            estado.textContent = "✅ Cliente y dirección completados";
+        inputCliente.value = datos.cliente;
+        if (datos.direccion) {
+            inputDireccion.value = datos.direccion;
+            estado.textContent = "✅ Cliente y dirección cargados";
         } else {
-            inputDireccion.value = texto;
-            estado.textContent = "✅ Dirección cargada (decí 'Estudio Pérez dirección Córdoba 1450' para separar ambos)";
+            autocompletarDireccionCliente();
+            estado.textContent = inputDireccion.value
+                ? "✅ Cliente cargado y dirección habitual completada"
+                : "✅ Cliente cargado. Completá o dictá la dirección";
         }
     };
 
@@ -147,19 +197,6 @@ function dictarTodo() {
 
     recognition.start();
 }
-
-const direccionesClientes = {{ clientes_dirs_json|safe }};
-
-function autocompletarDireccionCliente() {
-    const nombre = document.getElementById('input-cliente').value.trim();
-    const inputDir = document.getElementById('input-direccion');
-    if (direccionesClientes[nombre] && !inputDir.value.trim()) {
-        inputDir.value = direccionesClientes[nombre];
-    }
-}
-
-document.getElementById('input-cliente').addEventListener('change', autocompletarDireccionCliente);
-document.getElementById('input-cliente').addEventListener('input', autocompletarDireccionCliente);
 </script>
 
 </body>
