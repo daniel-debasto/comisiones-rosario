@@ -24,7 +24,7 @@ def obtener_fecha_seleccionada(request):
 def redirigir_con_fecha(fecha_obj):
     return redirect(f"{reverse('hoja_de_ruta')}?fecha={fecha_obj.isoformat()}")
 
-ddef construir_url_ruta_completa(pendientes):
+def construir_url_ruta_completa(pendientes):
     """Genera un link oficial de Google Maps (api=1) con origin, destination y waypoints."""
     lista = list(pendientes)
     if not lista:
@@ -35,7 +35,7 @@ ddef construir_url_ruta_completa(pendientes):
         for p in lista
     ]
     
-    base = "https://google.com"
+    base = "https://google.com" + "/maps/dir/?api=1"
     
     if len(paradas) == 1:
         return f"{base}&destination={paradas[0]}"
