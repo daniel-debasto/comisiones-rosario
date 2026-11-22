@@ -147,7 +147,7 @@
             </button>
         </form>
     </div>
-    {% empty %}
+        {% empty %}
         <div class="vacio-box">
             <div style="font-size: 2.5rem; margin-bottom: 8px;">🎉</div>
             <h3 style="color: #16a34a; margin-bottom: 6px;">Sin pendientes para esta fecha</h3>
@@ -163,9 +163,16 @@
                 <div class="tachado">{{ item.direccion_entrega }}</div>
                 <small style="color: #64748b;">{{ item.cliente.nombre }} · ${{ item.monto }}</small>
             </div>
-            <div>
-                {% if item.pagado %}
-                    <span class="badge estado-pago-si">Ya pagado</span>
-                {% else %}
-                    <span class="badge estado-pago-no">Falta cobrar</span>
-                {% endif %}
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <span class="badge {% if item.pagado %}estado-pago-si{% else %}estado-pago-no{% endif %}">
+                    {% if item.pagado %}Cobrado{% else %}Debe{% endif %}
+                </span>
+                <a href="{% url 'editar_comision' item.id %}" class="btn-mini btn-editar">✏️</a>
+            </div>
+        </div>
+    {% endfor %}
+    {% endif %}
+
+</div>
+</body>
+</html>
