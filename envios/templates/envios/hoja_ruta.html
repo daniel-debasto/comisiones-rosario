@@ -118,18 +118,26 @@
                     <span class="badge badge-libre">Horario libre</span>
                 {% endif %}
             </div>
-            <div class="card-tools">
+            
+                <div class="card-tools">
                 <a href="{% url 'editar_comision' item.id %}" class="btn-mini btn-editar">✏️</a>
-                <form method="POST" action="{% url 'posponer_manana' item.id %}" style="margin: 0;" onsubmit="return confirm('¿Pasar esta parada para mañana?');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-mini btn-posponer">⏭️ Mañana</button>
-                </form>
+                {% if fecha_sel == hoy %}
+                    <form method="POST" action="{% url 'posponer_manana' item.id %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-mini btn-posponer">⏭️ Mañana</button>
+                    </form>
+                {% else %}
+                    <form method="POST" action="{% url 'devolver_hoy' item.id %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
+                        <button type="submit" class="btn-mini" style="background: #dbeafe; color: #1d4ed8;">⏪ Hoy</button>
+                    </form>
+                {% endif %}
                 <form method="POST" action="{% url 'eliminar_comision' item.id %}" style="margin: 0;" onsubmit="return confirm('¿Eliminar esta parada?');">
                     {% csrf_token %}
                     <button type="submit" class="btn-mini btn-borrar">🗑️</button>
                 </form>
             </div>
-        </div>
 
         <div class="direccion">{{ item.direccion_entrega }}</div>
         <div class="cliente-row">

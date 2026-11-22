@@ -7,6 +7,7 @@ urlpatterns = [
     path('editar/<int:comision_id>/', views.editar_comision, name='editar_comision'),
     path('eliminar/<int:comision_id>/', views.eliminar_comision, name='eliminar_comision'),
     path('posponer/<int:comision_id>/', views.posponer_manana, name='posponer_manana'),
+    path('devolver/<int:comision_id>/', views.devolver_hoy, name='devolver_hoy'),
     path('optimizar-ia/', views.optimizar_ruta_ia, name='optimizar_ruta_ia'),
     path('entregar/<int:comision_id>/', views.marcar_entregado, name='marcar_entregado'),
 ]
