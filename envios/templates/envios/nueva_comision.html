@@ -17,6 +17,7 @@
             width: 100%; padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 1rem; background: #f8fafc;
         }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; background: white; }
+        .btn-dictado-todo { width: 100%; background: #eff6ff; color: #1d4ed8; border: 2px dashed #3b82f6; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 0.95rem; cursor: pointer; margin-bottom: 16px; }
         .check-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
         .check-row input { width: 22px; height: 22px; }
         .btn-guardar { width: 100%; background: #16a34a; color: white; border: none; padding: 14px; border-radius: 10px; font-size: 1.05rem; font-weight: 800; cursor: pointer; margin-top: 8px; }
@@ -34,14 +35,19 @@
     <form method="POST" class="form-card">
         {% csrf_token %}
 
+        <button type="button" id="btn-voz-todo" class="btn-dictado-todo" onclick="dictarTodo()">
+            🎙️ Dictar Cliente y Dirección por voz
+        </button>
+        <small id="estado-voz" style="color: #2563eb; display: block; margin-top: -10px; margin-bottom: 14px; font-size: 0.82rem; font-weight: 600; text-align: center;"></small>
+
         <div class="campo">
             <label>📅 Fecha del viaje</label>
             <input type="date" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}" required>
         </div>
 
         <div class="campo">
-            <label>👤 Cliente (escribí o elegí uno)</label>
-            <input type="text" name="cliente_nombre" list="lista-clientes" placeholder="Ej: Estudio Pérez" value="{{ comision.cliente.nombre|default:'' }}" required>
+            <label>👤 Cliente</label>
+            <input type="text" id="input-cliente" name="cliente_nombre" list="lista-clientes" placeholder="Ej: Estudio Pérez" value="{{ comision.cliente.nombre|default:'' }}" required>
             <datalist id="lista-clientes">
                 {% for c in clientes %}
                     <option value="{{ c.nombre }}">
@@ -51,7 +57,7 @@
 
         <div class="campo">
             <label>📍 Dirección en Rosario</label>
-            <input type="text" name="direccion_entrega" placeholder="Ej: Córdoba 1450" value="{{ comision.direccion_entrega|default:'' }}" required>
+            <input type="text" id="input-direccion" name="direccion_entrega" placeholder="Ej: Córdoba 1450" value="{{ comision.direccion_entrega|default:'' }}" required>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -87,6 +93,61 @@
         <button type="submit" class="btn-guardar">💾 {% if editando %}Guardar Cambios{% else %}Guardar en Hoja de Ruta{% endif %}</button>
     </form>
 </div>
+
+<script>
+function dictarTodo() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const btn = document.getElementById('btn-voz-todo');
+    const estado = document.getElementById('estado-voz');
+    const inputCliente = document.getElementById('input-cliente');
+    const inputDireccion = document.getElementById('input-direccion');
+
+    if (!SpeechRecognition) {
+        estado.textContent = "Tu navegador no soporta dictado por voz. Usá Google Chrome.";
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-AR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = function() {
+        btn.style.background = '#fee2e2';
+        btn.style.color = '#b91c1c';
+        btn.style.borderColor = '#dc2626';
+        btn.textContent = '⏹️ Escuchando... Decí "Cliente ... dirección ..."';
+        estado.textContent = "";
+    };
+
+    recognition.onresult = function(event) {
+        const texto = event.results.item(0).item(0).transcript.replace(/\.$/, '').trim();
+        const partes = texto.split(/\b(?:dirección|direccion|para|en)\b|,/i);
+
+        if (partes.length >= 2) {
+            inputCliente.value = partes.item(0).trim();
+            inputDireccion.value = partes.slice(1).join(' ').trim();
+            estado.textContent = "✅ Cliente y dirección completados";
+        } else {
+            inputDireccion.value = texto;
+            estado.textContent = "✅ Dirección cargada (decí 'Estudio Pérez dirección Córdoba 1450' para separar ambos)";
+        }
+    };
+
+    recognition.onerror = function() {
+        estado.textContent = "No se escuchó bien. Tocá el botón e intentá de nuevo.";
+    };
+
+    recognition.onend = function() {
+        btn.style.background = '#eff6ff';
+        btn.style.color = '#1d4ed8';
+        btn.style.borderColor = '#3b82f6';
+        btn.textContent = '🎙️ Dictar Cliente y Dirección por voz';
+    };
+
+    recognition.start();
+}
+</script>
 
 </body>
 </html>
