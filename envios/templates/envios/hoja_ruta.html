@@ -94,7 +94,12 @@
     </div>
     {% endif %}
 
-    <div class="seccion-titulo">Pendientes ({{ pendientes.count }})</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div class="seccion-titulo" style="margin-bottom: 0;">Pendientes</div>
+        <div style="background: #0f172a; color: #f8fafc; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 800;">
+            📦 Faltan: {{ pendientes.count }} de {{ pendientes.count|add:entregadas.count }}
+        </div>
+    </div>
 
     {% for item in pendientes %}
     <div class="card {% if item.hora_limite %}urgente{% endif %}">
