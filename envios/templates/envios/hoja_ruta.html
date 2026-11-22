@@ -97,7 +97,7 @@
         </form>
         {% endif %}
         {% if url_ruta_completa %}
-        <a href="{{ url_ruta_completa }}" class="btn" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px; display: flex; align-items: center; justify-content: center;">
+        <a href="{% url 'mapa_ruta_completa' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="btn" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px; display: flex; align-items: center; justify-content: center;">
             🗺️ Ruta Completa
         </a>
         {% endif %}

@@ -333,9 +333,45 @@ def cuentas_corrientes(request):
         'total_general': total_general,
     })
 
-
 def saldar_cliente(request, cliente_id):
     if request.method == 'POST':
         Comision.objects.filter(cliente_id=cliente_id, pagado=False).update(pagado=True)
     return redirect('cuentas_corrientes')
+
+def mapa_ruta_completa(request):
+    fecha_sel = obtener_fecha_seleccionada(request)
+    pendientes = list(Comision.objects.filter(
+        fecha_viaje=fecha_sel,
+        estado='PENDIENTE'
+    ).order_by('orden_ia', F('hora_limite').asc(nulls_last=True), 'id'))
+
+    puntos = []
+    if pendientes and settings.GEMINI_API_KEY:
+        lista_dirs = [{"orden": i + 1, "direccion": p.direccion_entrega, "cliente": p.cliente.nombre} for i, p in enumerate(pendientes)]
+        prompt = f"""
+        Devolve un JSON con las coordenadas aproximadas (lat, lng) en Rosario, Santa Fe, Argentina para estas direcciones:
+        {json.dumps(lista_dirs, ensure_ascii=False)}
+        Formato exacto:
+        {{"puntos": [{{"orden": 1, "direccion": "...", "cliente": "...", "lat": -32.95, "lng": -60.65}}]}}
+        """
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        for modelo in ['gemini-3.8-flash-lite', 'gemini-2.5-flash-lite']:
+            try:
+                resp = client.models.generate_content(
+                    model=modelo,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.1)
+                )
+                puntos = json.loads(resp.text).get("puntos", [])
+                if puntos:
+                    break
+            except Exception:
+                continue
+
+    return render(request, 'envios/mapa_ruta.html', {
+        'fecha_sel': fecha_sel,
+        'puntos_json': json.dumps(puntos, ensure_ascii=False),
+        'pendientes': pendientes,
+    })
+
 
