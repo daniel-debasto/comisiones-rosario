@@ -1,6 +1,8 @@
 import json
+from datetime import date, timedelta
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.db.models import F, Sum
 from django.utils import timezone
 from google import genai
@@ -8,11 +10,27 @@ from google.genai import types
 from .models import Comision, Cliente
 
 
+def obtener_fecha_seleccionada(request):
+    fecha_str = request.GET.get('fecha') or request.POST.get('fecha_viaje')
+    if fecha_str:
+        try:
+            return date.fromisoformat(fecha_str)
+        except ValueError:
+            pass
+    return timezone.localdate()
+
+
+def redirigir_con_fecha(fecha_obj):
+    return redirect(f"{reverse('hoja_de_ruta')}?fecha={fecha_obj.isoformat()}")
+
+
 def hoja_de_ruta(request):
     hoy = timezone.localdate()
+    manana = hoy + timedelta(days=1)
+    fecha_sel = obtener_fecha_seleccionada(request)
 
     pendientes = Comision.objects.filter(
-        fecha_viaje=hoy,
+        fecha_viaje=fecha_sel,
         estado='PENDIENTE'
     ).order_by(
         'orden_ia',
@@ -21,13 +39,13 @@ def hoja_de_ruta(request):
     )
 
     entregadas = Comision.objects.filter(
-        fecha_viaje=hoy,
+        fecha_viaje=fecha_sel,
         estado='ENTREGADO'
     ).order_by('-id')
 
     total_cobrado = entregadas.filter(pagado=True).aggregate(Sum('monto'))['monto__sum'] or 0
     total_pendiente_cobro = Comision.objects.filter(
-        fecha_viaje=hoy,
+        fecha_viaje=fecha_sel,
         pagado=False
     ).aggregate(Sum('monto'))['monto__sum'] or 0
 
@@ -35,6 +53,8 @@ def hoja_de_ruta(request):
 
     contexto = {
         'hoy': hoy,
+        'manana': manana,
+        'fecha_sel': fecha_sel,
         'pendientes': pendientes,
         'entregadas': entregadas,
         'total_cobrado': total_cobrado,
@@ -45,9 +65,9 @@ def hoja_de_ruta(request):
 
 
 def optimizar_ruta_ia(request):
+    fecha_sel = obtener_fecha_seleccionada(request)
     if request.method == 'POST':
-        hoy = timezone.localdate()
-        pendientes = list(Comision.objects.filter(fecha_viaje=hoy, estado='PENDIENTE'))
+        pendientes = list(Comision.objects.filter(fecha_viaje=fecha_sel, estado='PENDIENTE'))
 
         if len(pendientes) > 1 and settings.GEMINI_API_KEY:
             lista_paradas = []
@@ -77,7 +97,7 @@ def optimizar_ruta_ia(request):
             - Primero van obligatoriamente las entregas que tengan 'hora_limite' distinta de 'Libre' (ordenadas de mas temprana a mas tardia).
             - Luego ordena el resto haciendo un recorrido continuo sin volver atras: entra por Oeste (alturas 6000 -> 3000), baja a Zona Sur (alturas 2000-3000 Norte-Sur), sube por Macrocentro (1500-2000) y cierra en Centro/Rio (800-1200).
 
-            Entregas de hoy:
+            Entregas del dia:
             {json.dumps(lista_paradas, ensure_ascii=False)}
 
             Devolve un JSON con este formato exacto:
@@ -117,11 +137,12 @@ def optimizar_ruta_ia(request):
             if not exito:
                 request.session['consejo_ia'] = "No se pudo conectar con Gemini en este momento. Intenta de nuevo en unos segundos."
 
-    return redirect('hoja_de_ruta')
+    return redirigir_con_fecha(fecha_sel)
 
 
 def nueva_comision(request):
     clientes = Cliente.objects.all().order_by('nombre')
+    fecha_sel = obtener_fecha_seleccionada(request)
 
     if request.method == 'POST':
         nombre_cliente = request.POST.get('cliente_nombre', '').strip()
@@ -131,7 +152,7 @@ def nueva_comision(request):
         monto = request.POST.get('monto') or 0
 
         Comision.objects.create(
-            fecha_viaje=timezone.localdate(),
+            fecha_viaje=fecha_sel,
             cliente=cliente_obj,
             tipo=request.POST.get('tipo', 'SOBRE'),
             direccion_entrega=request.POST.get('direccion_entrega'),
@@ -140,18 +161,55 @@ def nueva_comision(request):
             pagado=('pagado' in request.POST),
             notas=request.POST.get('notas', '')
         )
-        return redirect('hoja_de_ruta')
+        return redirigir_con_fecha(fecha_sel)
 
     return render(request, 'envios/nueva_comision.html', {
         'clientes': clientes,
+        'fecha_sel': fecha_sel,
+        'editando': False,
     })
 
 
-def marcar_entregado(request, comision_id):
+def editar_comision(request, comision_id):
+    comision = get_object_or_404(Comision, id=comision_id)
+    clientes = Cliente.objects.all().order_by('nombre')
+
     if request.method == 'POST':
-        comision = get_object_or_404(Comision, id=comision_id)
+        nombre_cliente = request.POST.get('cliente_nombre', '').strip()
+        cliente_obj, _ = Cliente.objects.get_or_create(nombre=nombre_cliente)
+
+        comision.fecha_viaje = obtener_fecha_seleccionada(request)
+        comision.cliente = cliente_obj
+        comision.tipo = request.POST.get('tipo', 'SOBRE')
+        comision.direccion_entrega = request.POST.get('direccion_entrega')
+        comision.hora_limite = request.POST.get('hora_limite') or None
+        comision.monto = request.POST.get('monto') or 0
+        comision.pagado = ('pagado' in request.POST)
+        comision.notas = request.POST.get('notas', '')
+        comision.save()
+        return redirigir_con_fecha(comision.fecha_viaje)
+
+    return render(request, 'envios/nueva_comision.html', {
+        'clientes': clientes,
+        'comision': comision,
+        'fecha_sel': comision.fecha_viaje,
+        'editando': True,
+    })
+
+
+def eliminar_comision(request, comision_id):
+    comision = get_object_or_404(Comision, id=comision_id)
+    fecha_viaje = comision.fecha_viaje
+    if request.method == 'POST':
+        comision.delete()
+    return redirigir_con_fecha(fecha_viaje)
+
+
+def marcar_entregado(request, comision_id):
+    comision = get_object_or_404(Comision, id=comision_id)
+    if request.method == 'POST':
         comision.estado = 'ENTREGADO'
         if 'cobrado' in request.POST:
             comision.pagado = True
         comision.save()
-    return redirect('hoja_de_ruta')
+    return redirigir_con_fecha(comision.fecha_viaje)

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nueva Comisión</title>
+    <title>{% if editando %}Editar Comisión{% else %}Nueva Comisión{% endif %}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #1e293b; padding-bottom: 40px; }
@@ -13,7 +13,7 @@
         .form-card { background: white; padding: 20px; border-radius: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); }
         .campo { margin-bottom: 16px; }
         label { display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 6px; }
-        input[type="text"], input[type="number"], input[type="time"], select, textarea {
+        input[type="text"], input[type="number"], input[type="time"], input[type="date"], select, textarea {
             width: 100%; padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 1rem; background: #f8fafc;
         }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; background: white; }
@@ -25,8 +25,8 @@
 <body>
 
 <nav class="navbar">
-    <a href="{% url 'hoja_de_ruta' %}" class="btn-volver">← Volver</a>
-    <span style="font-weight: 700;">Nueva Comisión</span>
+    <a href="{% url 'hoja_de_ruta' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="btn-volver">← Volver</a>
+    <span style="font-weight: 700;">{% if editando %}✏️ Editar Comisión{% else %}Nueva Comisión{% endif %}</span>
     <span style="width: 50px;"></span>
 </nav>
 
@@ -35,8 +35,13 @@
         {% csrf_token %}
 
         <div class="campo">
+            <label>📅 Fecha del viaje</label>
+            <input type="date" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}" required>
+        </div>
+
+        <div class="campo">
             <label>👤 Cliente (escribí o elegí uno)</label>
-            <input type="text" name="cliente_nombre" list="lista-clientes" placeholder="Ej: Estudio Pérez" required>
+            <input type="text" name="cliente_nombre" list="lista-clientes" placeholder="Ej: Estudio Pérez" value="{{ comision.cliente.nombre|default:'' }}" required>
             <datalist id="lista-clientes">
                 {% for c in clientes %}
                     <option value="{{ c.nombre }}">
@@ -46,40 +51,40 @@
 
         <div class="campo">
             <label>📍 Dirección en Rosario</label>
-            <input type="text" name="direccion_entrega" placeholder="Ej: Córdoba 1450" required>
+            <input type="text" name="direccion_entrega" placeholder="Ej: Córdoba 1450" value="{{ comision.direccion_entrega|default:'' }}" required>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="campo">
                 <label>⏰ Hora límite (opcional)</label>
-                <input type="time" name="hora_limite">
+                <input type="time" name="hora_limite" value="{{ comision.hora_limite|time:'H:i'|default:'' }}">
             </div>
             <div class="campo">
                 <label>📦 Tipo</label>
                 <select name="tipo">
-                    <option value="SOBRE">Sobre / Doc.</option>
-                    <option value="BULTO">Paquete / Carga</option>
-                    <option value="TRAMITE">Trámite</option>
+                    <option value="SOBRE" {% if comision.tipo == 'SOBRE' %}selected{% endif %}>Sobre / Doc.</option>
+                    <option value="BULTO" {% if comision.tipo == 'BULTO' %}selected{% endif %}>Paquete / Carga</option>
+                    <option value="TRAMITE" {% if comision.tipo == 'TRAMITE' %}selected{% endif %}>Trámite</option>
                 </select>
             </div>
         </div>
 
         <div class="campo">
             <label>💲 Monto del envío ($)</label>
-            <input type="number" name="monto" placeholder="0" step="100">
+            <input type="number" name="monto" placeholder="0" step="100" value="{{ comision.monto|stringformat:'g'|default:'' }}">
         </div>
 
         <div class="check-row">
-            <input type="checkbox" name="pagado" id="pagado">
+            <input type="checkbox" name="pagado" id="pagado" {% if comision.pagado %}checked{% endif %}>
             <label for="pagado" style="margin: 0; font-size: 0.95rem; color: #0f172a;">Ya está pagado</label>
         </div>
 
         <div class="campo">
             <label>📝 Notas / Aclaraciones</label>
-            <textarea name="notas" rows="2" placeholder="Ej: Preguntar por Laura en recepción"></textarea>
+            <textarea name="notas" rows="2" placeholder="Ej: Preguntar por Laura en recepción">{{ comision.notas|default:'' }}</textarea>
         </div>
 
-        <button type="submit" class="btn-guardar">💾 Guardar en Hoja de Ruta</button>
+        <button type="submit" class="btn-guardar">💾 {% if editando %}Guardar Cambios{% else %}Guardar en Hoja de Ruta{% endif %}</button>
     </form>
 </div>
 
