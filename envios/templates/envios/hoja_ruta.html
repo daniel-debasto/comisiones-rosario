@@ -22,8 +22,8 @@
         .caja-valor-verde { color: #16a34a; font-size: 1.45rem; font-weight: 800; }
         .caja-valor-rojo { color: #dc2626; font-size: 1.45rem; font-weight: 800; }
         .seccion-titulo { font-size: 0.82rem; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.5px; }
-        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 3px 10px rgba(15,23,42,0.06); }
-        .card.urgente { border-left: 6px solid #dc2626; }
+        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 3px 10px rgba(15,23,42,0.06); border-left: 6px solid #3b82f6; }
+        .card.urgente { border-left-color: #dc2626; }
         .badges { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 6px; flex-wrap: wrap; }
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.76rem; font-weight: 700; }
         .badge-zona { background: #dbeafe; color: #1d4ed8; }
@@ -109,7 +109,7 @@
 
     {% for item in pendientes %}
     <div class="card {% if item.hora_limite %}urgente{% endif %}">
-    <div class="badges">
+        <div class="badges">
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                 <span class="badge badge-zona">🏁 Parada #{{ forloop.counter }}</span>
                 {% if item.hora_limite %}
@@ -118,7 +118,7 @@
                     <span class="badge badge-libre">Horario libre</span>
                 {% endif %}
             </div>
-                <div class="card-tools">
+            <div class="card-tools">
                 <a href="{% url 'editar_comision' item.id %}" class="btn-mini btn-editar">✏️</a>
                 {% if fecha_sel == hoy %}
                     <form method="POST" action="{% url 'posponer_manana' item.id %}" style="margin: 0;">
@@ -137,6 +137,7 @@
                     <button type="submit" class="btn-mini btn-borrar">🗑️</button>
                 </form>
             </div>
+        </div>
 
         <div class="direccion">{{ item.direccion_entrega }}</div>
         <div class="cliente-row">
@@ -154,14 +155,16 @@
             <span class="precio">${{ item.monto|floatformat:0|intcomma }}</span>
             {% if item.pagado %}
                 <span class="badge estado-pago-si">Ya pagado</span>
+            {% else %}
+                <span class="badge estado-pago-no">Falta cobrar</span>
             {% endif %}
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-            <a href="https://google.com/maps?q={{ item.direccion_entrega|urlencode }},+Rosario,+Santa+Fe" class="btn btn-maps" style="margin-bottom: 0;">
+            <a href="https://google.com{{ item.direccion_entrega|urlencode }},+Rosario,+Santa+Fe" class="btn btn-maps" style="margin-bottom: 0;">
                 🗺️ Google Maps
             </a>
-            <a href="https://waze.com/ul?q={{ item.direccion_entrega|urlencode }},+Rosario,+Santa+Fe&navigate=yes" class="btn btn-waze" style="margin-bottom: 0;">
+            <a href="https://waze.com{{ item.direccion_entrega|urlencode }},+Rosario,+Santa+Fe&navigate=yes" class="btn btn-waze" style="margin-bottom: 0;">
                 🚗 Waze
             </a>
         </div>
@@ -179,6 +182,7 @@
         </form>
     </div>
     {% empty %}
+
         <div class="vacio-box">
             <div style="font-size: 2.5rem; margin-bottom: 8px;">🎉</div>
             <h3 style="color: #16a34a; margin-bottom: 6px;">Sin pendientes para esta fecha</h3>
