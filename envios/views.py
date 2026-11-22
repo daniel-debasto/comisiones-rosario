@@ -1,9 +1,10 @@
 import json
+import urllib.parse
 from datetime import date, timedelta
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
-from django.db.models import F, Sum
+from django.db.models import F, Sum, Count
 from django.utils import timezone
 from google import genai
 from google.genai import types
@@ -22,6 +23,19 @@ def obtener_fecha_seleccionada(request):
 
 def redirigir_con_fecha(fecha_obj):
     return redirect(f"{reverse('hoja_de_ruta')}?fecha={fecha_obj.isoformat()}")
+
+
+def construir_url_ruta_completa(pendientes):
+    """Genera un link único de Google Maps con todas las paradas pendientes en orden."""
+    lista = list(pendientes)
+    if not lista:
+        return None
+    paradas_url = [
+        urllib.parse.quote(f"{p.direccion_entrega}, Rosario, Santa Fe, Argentina")
+        for p in lista
+    ]
+    # Google Maps soporta hasta 10 paradas seguidas en /maps/dir/
+    return "https://google.com" + "/".join(paradas_url[:10])
 
 
 def hoja_de_ruta(request):
@@ -49,6 +63,8 @@ def hoja_de_ruta(request):
         pagado=False
     ).aggregate(Sum('monto'))['monto__sum'] or 0
 
+    deudores_count = Comision.objects.filter(pagado=False, monto__gt=0).values('cliente').distinct().count()
+    url_ruta_completa = construir_url_ruta_completa(pendientes)
     consejo_ia = request.session.pop('consejo_ia', None)
 
     contexto = {
@@ -59,6 +75,8 @@ def hoja_de_ruta(request):
         'entregadas': entregadas,
         'total_cobrado': total_cobrado,
         'total_pendiente_cobro': total_pendiente_cobro,
+        'deudores_count': deudores_count,
+        'url_ruta_completa': url_ruta_completa,
         'consejo_ia': consejo_ia,
     }
     return render(request, 'envios/hoja_ruta.html', contexto)
@@ -146,7 +164,13 @@ def nueva_comision(request):
 
     if request.method == 'POST':
         nombre_cliente = request.POST.get('cliente_nombre', '').strip()
+        direccion = request.POST.get('direccion_entrega', '').replace(' .', '.').strip()
         cliente_obj, _ = Cliente.objects.get_or_create(nombre=nombre_cliente)
+
+        # Guarda la ultima direccion usada como direccion habitual del cliente
+        if direccion and cliente_obj.direccion_frecuente != direccion:
+            cliente_obj.direccion_frecuente = direccion
+            cliente_obj.save()
 
         hora = request.POST.get('hora_limite') or None
         monto = request.POST.get('monto') or 0
@@ -155,7 +179,7 @@ def nueva_comision(request):
             fecha_viaje=fecha_sel,
             cliente=cliente_obj,
             tipo=request.POST.get('tipo', 'SOBRE'),
-            direccion_entrega=request.POST.get('direccion_entrega'),
+            direccion_entrega=direccion,
             hora_limite=hora,
             monto=monto,
             pagado=('pagado' in request.POST),
@@ -163,8 +187,11 @@ def nueva_comision(request):
         )
         return redirigir_con_fecha(fecha_sel)
 
+    clientes_dirs = {c.nombre: (c.direccion_frecuente or '') for c in clientes}
+
     return render(request, 'envios/nueva_comision.html', {
         'clientes': clientes,
+        'clientes_dirs_json': json.dumps(clientes_dirs, ensure_ascii=False),
         'fecha_sel': fecha_sel,
         'editando': False,
     })
@@ -176,12 +203,17 @@ def editar_comision(request, comision_id):
 
     if request.method == 'POST':
         nombre_cliente = request.POST.get('cliente_nombre', '').strip()
+        direccion = request.POST.get('direccion_entrega', '').replace(' .', '.').strip()
         cliente_obj, _ = Cliente.objects.get_or_create(nombre=nombre_cliente)
+
+        if direccion and cliente_obj.direccion_frecuente != direccion:
+            cliente_obj.direccion_frecuente = direccion
+            cliente_obj.save()
 
         comision.fecha_viaje = obtener_fecha_seleccionada(request)
         comision.cliente = cliente_obj
         comision.tipo = request.POST.get('tipo', 'SOBRE')
-        comision.direccion_entrega = request.POST.get('direccion_entrega')
+        comision.direccion_entrega = direccion
         comision.hora_limite = request.POST.get('hora_limite') or None
         comision.monto = request.POST.get('monto') or 0
         comision.pagado = ('pagado' in request.POST)
@@ -189,12 +221,16 @@ def editar_comision(request, comision_id):
         comision.save()
         return redirigir_con_fecha(comision.fecha_viaje)
 
+    clientes_dirs = {c.nombre: (c.direccion_frecuente or '') for c in clientes}
+
     return render(request, 'envios/nueva_comision.html', {
         'clientes': clientes,
+        'clientes_dirs_json': json.dumps(clientes_dirs, ensure_ascii=False),
         'comision': comision,
         'fecha_sel': comision.fecha_viaje,
         'editando': True,
     })
+
 
 def posponer_manana(request, comision_id):
     comision = get_object_or_404(Comision, id=comision_id)
@@ -203,8 +239,6 @@ def posponer_manana(request, comision_id):
         comision.fecha_viaje = fecha_anterior + timedelta(days=1)
         comision.orden_ia = 99
         comision.save()
-        request.session['consejo_ia'] = f"Parada en {comision.direccion_entrega} reprogramada para el {comision.fecha_viaje.strftime('%d/%m')}."
-    return redirigir_con_fecha(fecha_anterior)
 
 def devolver_hoy(request, comision_id):
     comision = get_object_or_404(Comision, id=comision_id)
@@ -231,3 +265,63 @@ def marcar_entregado(request, comision_id):
             comision.pagado = True
         comision.save()
     return redirigir_con_fecha(comision.fecha_viaje)
+
+def devolver_hoy(request, comision_id):
+    comision = get_object_or_404(Comision, id=comision_id)
+    fecha_actual_vista = obtener_fecha_seleccionada(request)
+    if request.method == 'POST':
+        comision.fecha_viaje = timezone.localdate()
+        comision.orden_ia = 99
+        comision.save()
+        request.session['consejo_ia'] = f"Parada en {comision.direccion_entrega} devuelta a la ruta de hoy."
+    return redirigir_con_fecha(fecha_actual_vista)
+
+
+def eliminar_comision(request, comision_id):
+    comision = get_object_or_404(Comision, id=comision_id)
+    fecha_viaje = comision.fecha_viaje
+    if request.method == 'POST':
+        comision.delete()
+    return redirigir_con_fecha(fecha_viaje)
+
+
+def marcar_entregado(request, comision_id):
+    comision = get_object_or_404(Comision, id=comision_id)
+    if request.method == 'POST':
+        comision.estado = 'ENTREGADO'
+        if 'cobrado' in request.POST:
+            comision.pagado = True
+        comision.save()
+    return redirigir_con_fecha(comision.fecha_viaje)
+
+
+def cuentas_corrientes(request):
+    impagas = Comision.objects.filter(pagado=False, monto__gt=0).select_related('cliente').order_by('cliente__nombre', 'fecha_viaje')
+    agrupado = {}
+    total_general = 0
+    for c in impagas:
+        cid = c.cliente.id
+        if cid not in agrupado:
+            agrupado[cid] = {
+                'cliente': c.cliente,
+                'total_deuda': 0,
+                'cantidad': 0,
+                'comisiones': []
+            }
+        agrupado[cid]['total_deuda'] += c.monto
+        agrupado[cid]['cantidad'] += 1
+        agrupado[cid]['comisiones'].append(c)
+        total_general += c.monto
+
+    deudores = sorted(agrupado.values(), key=lambda x: x['total_deuda'], reverse=True)
+    return render(request, 'envios/cuentas_corrientes.html', {
+        'deudores': deudores,
+        'total_general': total_general,
+    })
+
+
+def saldar_cliente(request, cliente_id):
+    if request.method == 'POST':
+        Comision.objects.filter(cliente_id=cliente_id, pagado=False).update(pagado=True)
+    return redirect('cuentas_corrientes')
+
