@@ -25,20 +25,21 @@ def redirigir_con_fecha(fecha_obj):
     return redirect(f"{reverse('hoja_de_ruta')}?fecha={fecha_obj.isoformat()}")
 
 def construir_url_ruta_completa(pendientes):
-    """Genera un link oficial de Google Maps (api=1) con origin, destination y waypoints."""
+    """Genera un link de ruta encadenada compatible con la app móvil de Google Maps."""
     lista = list(pendientes)
     if not lista:
         return None
-    
+
+    # Punto de inicio fijo al entrar desde Firmat para que Android arme toda la cadena de paradas
+    origen = urllib.parse.quote("Av. Presidente Perón y Av. Circunvalación, Rosario, Santa Fe")
     paradas = [
-        urllib.parse.quote(f"{p.direccion_entrega}, Rosario, Santa Fe, Argentina")
+        urllib.parse.quote(f"{p.direccion_entrega}, Rosario, Santa Fe")
         for p in lista
     ]
-    
-    base = "https://google.com" + "/maps/dir/?api=1"
-    
-    if len(paradas) == 1:
-        return f"{base}&destination={paradas[0]}"
+
+    dominio = "https://google.com"
+    ruta = "/maps/dir/" + origen + "/" + "/".join(paradas[:9])
+    return dominio + ruta
     
     # La última parada es el destino final y las anteriores son paradas intermedias
     destino = paradas[-1]
