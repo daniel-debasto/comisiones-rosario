@@ -188,10 +188,14 @@
     </div>
     {% empty %}
 
+
         <div class="vacio-box">
-            <div style="font-size: 2.5rem; margin-bottom: 8px;">🎉</div>
-            <h3 style="color: #16a34a; margin-bottom: 6px;">Sin pendientes para esta fecha</h3>
-            <p style="color: #64748b; font-size: 0.9rem;">Tocá "+ Nueva" arriba para cargar una comisión.</p>
+            <div style="font-size: 2.5rem; margin-bottom: 10px;">📋</div>
+            <h3 style="color: #1e293b; margin-bottom: 6px; font-weight: 800;">Hoja de ruta vacía</h3>
+            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 16px;">Todavía no hay comisiones cargadas para esta fecha.</p>
+            <a href="{% url 'nueva_comision' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" style="display: inline-block; background: #0f172a; color: white; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 0.9rem;">
+                + Cargar envío
+            </a>
         </div>
     {% endfor %}
 
