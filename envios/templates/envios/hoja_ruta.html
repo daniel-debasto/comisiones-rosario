@@ -165,3 +165,22 @@
     <div class="seccion-titulo" style="margin-top: 24px;">Entregadas ({{ entregadas.count }})</div>
 
     {% for item in entregadas %}
+            <div class="card-completada">
+            <div>
+                <div class="tachado">{{ item.direccion_entrega }}</div>
+                <small style="color: #64748b;">{{ item.cliente.nombre }} · ${{ item.monto }}</small>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <span class="badge {% if item.pagado %}estado-pago-si{% else %}estado-pago-no{% endif %}">
+                    {% if item.pagado %}Cobrado{% else %}Debe{% endif %}
+                </span>
+                <a href="https://wa.me{{ item.cliente.nombre|urlencode }},%20ya%20realic%C3%A9%20la%20entrega%20en%20{{ item.direccion_entrega|urlencode }}." class="btn-mini" style="background: #dcfce7; color: #15803d;">📲</a>
+                <a href="{% url 'editar_comision' item.id %}" class="btn-mini btn-editar">✏️</a>
+            </div>
+        </div>
+    {% endfor %}
+    {% endif %}
+
+</div>
+</body>
+</html>
