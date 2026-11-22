@@ -85,9 +85,9 @@
         </div>
     </div>
 
-    {% if pendientes.count > 0 %}
+    {% if pendientes|length > 0 %}
     <div style="display: grid; grid-template-columns: {% if pendientes.count > 1 %}1fr 1fr{% else %}1fr{% endif %}; gap: 8px; margin-bottom: 16px;">
-        {% if pendientes.count > 1 %}
+        {% if pendientes|length > 1 %}
         <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin: 0;">
             {% csrf_token %}
             <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
@@ -107,7 +107,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <span class="seccion-titulo">Pendientes</span>
         <span style="background: #0f172a; color: #f8fafc; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 800;">
-            📦 Faltan: {{ pendientes.count }} de {{ pendientes.count|add:entregadas.count }}
+            📦 Faltan: {{ pendientes|length }} de {{ pendientes|length|add:entregadas.count }}
         </span>
     </div>
 
