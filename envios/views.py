@@ -25,29 +25,20 @@ def redirigir_con_fecha(fecha_obj):
     return redirect(f"{reverse('hoja_de_ruta')}?fecha={fecha_obj.isoformat()}")
 
 def construir_url_ruta_completa(pendientes):
-    """Genera un link de ruta encadenada compatible con la app móvil de Google Maps."""
+    """Genera ruta multiparada con formato saddr/daddr +to: compatible con Android Google Maps."""
     lista = list(pendientes)
     if not lista:
         return None
 
-    # Punto de inicio fijo al entrar desde Firmat para que Android arme toda la cadena de paradas
-    origen = urllib.parse.quote("Av. Presidente Perón y Av. Circunvalación, Rosario, Santa Fe")
-    paradas = [
+    origen = urllib.parse.quote("Av. Presidente Perón y Circunvalación, Rosario, Santa Fe")
+    destinos = [
         urllib.parse.quote(f"{p.direccion_entrega}, Rosario, Santa Fe")
         for p in lista
     ]
 
     dominio = "https://google.com"
-    ruta = "/maps/dir/" + origen + "/" + "/".join(paradas[:9])
+    ruta = "/maps?saddr=" + origen + "&daddr=" + "+to:".join(destinos[:9])
     return dominio + ruta
-    
-    # La última parada es el destino final y las anteriores son paradas intermedias
-    destino = paradas[-1]
-    intermedias = "|".join(paradas[:-1][:8])  # Google Maps permite hasta 8 waypoints en móvil
-    
-    if intermedias:
-        return f"{base}&destination={destino}&waypoints={intermedias}&travelmode=driving"
-    return f"{base}&destination={destino}&travelmode=driving"
 
 
 def agregar_links_gps(pendientes):
