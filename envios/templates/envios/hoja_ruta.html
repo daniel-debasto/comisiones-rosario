@@ -66,6 +66,7 @@
 <div class="fecha-bar">
     <a href="{% url 'hoja_de_ruta' %}?fecha={{ hoy|date:'Y-m-d' }}" class="fecha-pill {% if fecha_sel == hoy %}activa{% endif %}">Hoy ({{ hoy|date:"d/m" }})</a>
     <a href="{% url 'hoja_de_ruta' %}?fecha={{ manana|date:'Y-m-d' }}" class="fecha-pill {% if fecha_sel == manana %}activa{% endif %}">Mañana ({{ manana|date:"d/m" }})</a>
+    <a href="{% url 'cuentas_corrientes' %}" class="fecha-pill" style="background: #7f1d1d; color: #fecaca;">💰 Deudas ({{ deudores_count }})</a>
     <form method="GET" action="{% url 'hoja_de_ruta' %}" style="margin: 0;">
         <input type="date" name="fecha" value="{{ fecha_sel|date:'Y-m-d' }}" onchange="this.form.submit()" class="fecha-input">
     </form>
@@ -84,19 +85,22 @@
         </div>
     </div>
 
-    {% if pendientes.count > 1 %}
-    <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin-bottom: 16px;">
-        {% csrf_token %}
-        <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
-        <button type="submit" class="btn" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);">
-            🤖 Ordenar Ruta Óptima con IA
-        </button>
-    </form>
-    {% endif %}
-
-    {% if consejo_ia %}
-    <div style="background: #eef2ff; border-left: 5px solid #4f46e5; color: #1e1b4b; padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 0.88rem;">
-        <strong>🤖 Info de Ruta:</strong> {{ consejo_ia }}
+    {% if pendientes.count > 0 %}
+    <div style="display: grid; grid-template-columns: {% if pendientes.count > 1 %}1fr 1fr{% else %}1fr{% endif %}; gap: 8px; margin-bottom: 16px;">
+        {% if pendientes.count > 1 %}
+        <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
+            <button type="submit" class="btn" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px;">
+                🤖 Ordenar con IA
+            </button>
+        </form>
+        {% endif %}
+        {% if url_ruta_completa %}
+        <a href="{{ url_ruta_completa }}" class="btn" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px; display: flex; align-items: center; justify-content: center;">
+            🗺️ Ruta Completa
+        </a>
+        {% endif %}
     </div>
     {% endif %}
 

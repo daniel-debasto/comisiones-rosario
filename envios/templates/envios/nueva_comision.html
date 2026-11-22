@@ -147,6 +147,19 @@ function dictarTodo() {
 
     recognition.start();
 }
+
+const direccionesClientes = {{ clientes_dirs_json|safe }};
+
+function autocompletarDireccionCliente() {
+    const nombre = document.getElementById('input-cliente').value.trim();
+    const inputDir = document.getElementById('input-direccion');
+    if (direccionesClientes[nombre] && !inputDir.value.trim()) {
+        inputDir.value = direccionesClientes[nombre];
+    }
+}
+
+document.getElementById('input-cliente').addEventListener('change', autocompletarDireccionCliente);
+document.getElementById('input-cliente').addEventListener('input', autocompletarDireccionCliente);
 </script>
 
 </body>
