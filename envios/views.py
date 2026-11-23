@@ -54,8 +54,9 @@ def agregar_links_gps(pendientes):
 
 def hoja_de_ruta(request):
     hoy = timezone.localdate()
-    manana = hoy + timedelta(days=1)
     fecha_sel = obtener_fecha_seleccionada(request)
+    ayer = fecha_sel - timedelta(days=1)
+    manana = fecha_sel + timedelta(days=1)
 
     pendientes = Comision.objects.filter(
         fecha_viaje=fecha_sel,
@@ -83,7 +84,9 @@ def hoja_de_ruta(request):
     consejo_ia = request.session.pop('consejo_ia', None)
 
     contexto = {
+            contexto = {
         'hoy': hoy,
+        'ayer': ayer,
         'manana': manana,
         'fecha_sel': fecha_sel,
         'pendientes': pendientes_lista,

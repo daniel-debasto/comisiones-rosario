@@ -13,14 +13,17 @@
     <link rel="manifest" href="{% static 'envios/manifest.json' %}">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f8fafc; color: #0f172a; padding-bottom: 40px; }
+        .body { background-color: #f8fafc; color: #0f172a; padding-bottom: 40px; }
         .navbar { background-color: #0f172a; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .navbar-title { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.3px; }
         .btn-nueva { background-color: #2563eb; color: white; text-decoration: none; padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; }
-        .fecha-bar { background: #1e293b; padding: 10px 16px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
-        .fecha-pill { padding: 6px 12px; border-radius: 20px; text-decoration: none; font-size: 0.82rem; font-weight: 600; background: #334155; color: #cbd5e1; }
-        .fecha-pill.activa { background: #ffffff; color: #0f172a; font-weight: 700; }
-        .fecha-pill.deudas { background: #334155; color: #fca5a5; border: 1px solid #7f1d1d; }
+        .fecha-bar { background: #1e293b; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .fecha-nav { display: flex; align-items: center; background: #334155; border-radius: 10px; padding: 2px; }
+        .fecha-flecha { color: #f8fafc; text-decoration: none; padding: 6px 12px; font-weight: 800; font-size: 0.9rem; border-radius: 8px; }
+        .fecha-centro { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 10px; color: white; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
+        .fecha-centro input[type="date"] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .btn-hoy-chip { background: #2563eb; color: white; text-decoration: none; padding: 6px 10px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; }
+        .fecha-pill.deudas { background: #334155; color: #fca5a5; border: 1px solid #7f1d1d; padding: 6px 11px; border-radius: 10px; text-decoration: none; font-size: 0.8rem; font-weight: 700; }
         .fecha-input { padding: 5px 8px; border-radius: 8px; border: none; font-size: 0.82rem; font-weight: 600; background: #f1f5f9; color: #0f172a; }
         .container { max-width: 560px; margin: 0 auto; padding: 16px; }
         .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
@@ -63,56 +66,22 @@
 </nav>
 
 <div class="fecha-bar">
-    <a href="{% url 'hoja_de_ruta' %}?fecha={{ hoy|date:'Y-m-d' }}" class="fecha-pill {% if fecha_sel == hoy %}activa{% endif %}">Hoy ({{ hoy|date:"d/m" }})</a>
-    <a href="{% url 'hoja_de_ruta' %}?fecha={{ manana|date:'Y-m-d' }}" class="fecha-pill {% if fecha_sel == manana %}activa{% endif %}">Mañana ({{ manana|date:"d/m" }})</a>
-    <a href="{% url 'cuentas_corrientes' %}" class="fecha-pill deudas">💰 Deudas ({{ deudores_count }})</a>
-    <form method="GET" action="{% url 'hoja_de_ruta' %}" style="margin: 0;">
-        <input type="date" name="fecha" value="{{ fecha_sel|date:'Y-m-d' }}" onchange="this.form.submit()" class="fecha-input">
-    </form>
-</div>
-
-<div class="container">
-
-    <div class="resumen">
-        <div class="caja-box">
-            <span class="caja-label">Cobrado</span>
-            <span class="caja-valor-verde">${{ total_cobrado|floatformat:0|intcomma }}</span>
-        </div>
-        <div class="caja-box">
-            <span class="caja-label">Por cobrar</span>
-            <span class="caja-valor-rojo">${{ total_pendiente_cobro|floatformat:0|intcomma }}</span>
-        </div>
-    </div>
-
-    {% if pendientes|length > 0 %}
-    <div style="display: grid; grid-template-columns: {% if pendientes|length > 1 %}1fr 1fr{% else %}1fr{% endif %}; gap: 8px; margin-bottom: 16px;">
-        {% if pendientes|length > 1 %}
-                <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin: 0;" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='⏳ Ordenando...'; b.style.opacity='0.7';">
-            {% csrf_token %}
-            <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
-            <button type="submit" class="btn" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px;">
-                🤖 Ordenar con IA
-            </button>
+    <div class="fecha-nav">
+        <a href="{% url 'hoja_de_ruta' %}?fecha={{ ayer|date:'Y-m-d' }}" class="fecha-flecha">◀</a>
+        <form method="GET" action="{% url 'hoja_de_ruta' %}" class="fecha-centro" style="margin: 0;">
+            <span>📅 {% if fecha_sel == hoy %}Hoy · {% endif %}{{ fecha_sel|date:"d/m" }}</span>
+            <input type="date" name="fecha" value="{{ fecha_sel|date:'Y-m-d' }}" onchange="this.form.submit()">
         </form>
+        <a href="{% url 'hoja_de_ruta' %}?fecha={{ manana|date:'Y-m-d' }}" class="fecha-flecha">▶</a>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 6px;">
+        {% if fecha_sel != hoy %}
+            <a href="{% url 'hoja_de_ruta' %}?fecha={{ hoy|date:'Y-m-d' }}" class="btn-hoy-chip">Hoy</a>
         {% endif %}
-        <a href="{% url 'mapa_ruta_completa' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="btn" style="background: white; color: #0f172a; border: 1.5px solid #cbd5e1; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px; display: flex; align-items: center; justify-content: center;">
-            🗺️ Ruta Completa
-        </a>
+        <a href="{% url 'cuentas_corrientes' %}" class="fecha-pill deudas">💰 Deudas ({{ deudores_count }})</a>
     </div>
-    {% endif %}
-
-    {% if consejo_ia %}
-    <div style="background: #f1f5f9; border-left: 4px solid #0f172a; color: #1e293b; padding: 11px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.86rem;">
-        <strong>🤖 Info de Ruta:</strong> {{ consejo_ia }}
-    </div>
-    {% endif %}
-
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <span class="seccion-titulo">Pendientes</span>
-        <span style="background: #0f172a; color: #f8fafc; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700;">
-            📦 Faltan: {{ pendientes|length }} de {{ pendientes|length|add:entregadas.count }}
-        </span>
-    </div>
+</div>
 
     {% for item in pendientes %}
     <div class="card {% if item.hora_limite %}urgente{% endif %}">
