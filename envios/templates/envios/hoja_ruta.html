@@ -142,21 +142,41 @@
 
 <div class="container">
 
-    {% if pendientes|length > 0 %}
+        {% if pendientes|length > 0 %}
     <div class="{% if pendientes|length > 1 %}acciones-ruta-2{% else %}acciones-ruta-1{% endif %}">
         {% if pendientes|length > 1 %}
-        <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin: 0;" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='⏳ Ordenando...'; b.style.opacity='0.7';">
-            {% csrf_token %}
-            <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
-            <button type="submit" class="btn" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px;">
-                🤖 Ordenar con IA
-            </button>
-        </form>
+        <button type="button" class="btn" onclick="const p=document.getElementById('panel-ia'); p.style.display = p.style.display === 'none' ? 'block' : 'none';" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px;">
+            🤖 Ordenar con IA
+        </button>
         {% endif %}
         <a href="{% url 'mapa_ruta_completa' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="btn" style="background: white; color: #0f172a; border: 1.5px solid #cbd5e1; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px; display: flex; align-items: center; justify-content: center;">
             🗺️ Ruta Completa
         </a>
     </div>
+
+    {% if pendientes|length > 1 %}
+    <div id="panel-ia" style="display: none; background: white; border: 1.5px solid #0f172a; border-radius: 14px; padding: 14px; margin-bottom: 16px; box-shadow: 0 6px 18px rgba(15,23,42,0.08);">
+        <div style="font-size: 0.82rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">¿Por dónde entrás hoy a Rosario?</div>
+        
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
+            <button type="button" onclick="document.getElementById('input-indicacion-ia').value='Hoy entro por Ovidio Lagos (Ruta A012), ordename las comisiones por dirección';" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; font-size: 0.78rem; font-weight: 700; color: #1e293b; cursor: pointer;">📍 Ovidio Lagos</button>
+            <button type="button" onclick="document.getElementById('input-indicacion-ia').value='Hoy entro por Soldini (Ruta 14), ordename las comisiones por dirección';" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; font-size: 0.78rem; font-weight: 700; color: #1e293b; cursor: pointer;">📍 Soldini</button>
+            <button type="button" onclick="document.getElementById('input-indicacion-ia').value='Hoy entro por Av. Pte. Perón (Ruta 33), ordename las comisiones por dirección';" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; font-size: 0.78rem; font-weight: 700; color: #1e293b; cursor: pointer;">📍 Ruta 33</button>
+        </div>
+
+        <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin: 0;" onsubmit="const b=this.querySelector('button[type=submit]'); b.disabled=true; b.innerHTML='⏳ Armándo recorrido...';">
+            {% csrf_token %}
+            <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
+            <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                <input type="text" id="input-indicacion-ia" name="indicacion" placeholder="Ej: Hoy entro por Ovidio Lagos, ordename por dirección" style="flex: 1; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.88rem;" required>
+                <button type="button" onclick="dictarIndicacionIA()" style="background: #eff6ff; border: 1.5px solid #3b82f6; color: #1d4ed8; border-radius: 10px; padding: 0 12px; font-size: 1.1rem; cursor: pointer;" title="Dictar por voz">🎙️</button>
+            </div>
+            <button type="submit" class="btn" style="background: #2563eb; color: white; margin-bottom: 0; font-size: 0.88rem; padding: 11px;">
+                ✨ Generar orden con IA
+            </button>
+        </form>
+    </div>
+    {% endif %}
     {% endif %}
 
         {% if consejo_ia %}
@@ -310,6 +330,17 @@ function enviarWhatsApp(btn) {
     const texto = encodeURIComponent('Hola ' + cliente + ', ya realicé la entrega en ' + dir + '.');
     window.location.href = 'whatsapp://send?text=' + texto;
 }
+function dictarIndicacionIA() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-AR';
+    recognition.onresult = function(e) {
+        document.getElementById('input-indicacion-ia').value = e.results.item(0).item(0).transcript;
+    };
+    recognition.start();
+}
+
 </script>
 </body>
 </html>

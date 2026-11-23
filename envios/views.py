@@ -103,46 +103,31 @@ def optimizar_ruta_ia(request):
     fecha_sel = obtener_fecha_seleccionada(request)
     if request.method == 'POST':
         pendientes = list(Comision.objects.filter(fecha_viaje=fecha_sel, estado='PENDIENTE'))
+        indicacion = request.POST.get('indicacion', '').strip() or "Entrando por Av. Ovidio Lagos (Ruta A012)"
 
         if len(pendientes) > 1 and settings.GEMINI_API_KEY:
             lista_paradas = [
                 {
                     "id": p.id,
                     "dir": p.direccion_entrega,
+                    "cliente": p.cliente.nombre,
                     "hora": p.hora_limite.strftime("%H:%M") if p.hora_limite else None
                 }
                 for p in pendientes
             ]
 
-            prompt = f"""Sos un asistente experto en logística y calles de Rosario, Santa Fe. Ordená las paradas de un comisionista que viaja desde Firmat hacia Rosario.
-
-Contexto de ingreso a Rosario:
-- El vehículo ingresa desde el Sur/Suroeste: por Ruta 14 (atravesando Soldini hacia Av. Uriburu / zona Suroeste) o por Ruta A012 bajando por Av. Ovidio Lagos (acceso Sur) o tomando Av. de Circunvalación (A008) para bajar directo a las avenidas de acceso (Pellegrini, 27 de Febrero, Uriburu, Córdoba, Mendoza, Oroño, etc.).
-
-Reglas estrictas de ordenamiento:
-1. Prioridad horaria: Primero todas las paradas que tengan 'hora' asignada, ordenadas estrictamente de la más temprana a la más tardía (evaluando si conviene entrar directo por Ovidio Lagos/Uriburu o usar Circunvalación para llegar a tiempo).
-2. Recorrido continuo (sin volver atrás): Ordenar el resto de las paradas aprovechando la inercia de entrada (desde el Sur/Suroeste o bajada de Circunvalación hacia el Centro/Río) en sentido geográfico continuo:
-   - Periferia / Cercanías Circunvalación y Oeste (alturas E-O 6000 a 3000, o cercanas a bajadas de Circunvalación).
-   - Zona Sur / Abasto / Acceso Ovidio Lagos y Uriburu (alturas N-S 3500 a 2100).
-   - Macrocentro (alturas 2000 a 1300).
-   - Centro / Zona Río (alturas 1200 a 100, dejando el microcentro para el cierre del circuito si no tiene horario).
-
-Paradas a ordenar: {json.dumps(lista_paradas, ensure_ascii=False)}
-
-Respondé ÚNICAMENTE con este JSON exacto (sin bloques de código markdown, sin texto extra y sin asteriscos):
-{{"ids": [id1, id2], "consejo": "1 oración corta indicando por dónde conviene entrar (Ovidio Lagos, Soldini o Circunvalación) y el sentido del recorrido."}}"""
+            prompt = f"""Sos un asistente logístico experto en Rosario, Santa Fe, Argentina.
+Indicación del chofer para hoy: "{indicacion}".
+Ordená estas paradas en un recorrido lógico y continuo sin volver atrás, respetando:
+1. Primero las paradas que tienen 'hora' límite (de más temprana a más tardía).
+2. El resto según el punto de ingreso indicado por el chofer (ej: si entra por Ovidio Lagos / A012 viene desde el Sur/Suroeste hacia el Centro; si entra por Soldini / Ruta 14 viene por Av. Uriburu / Batlle y Ordóñez; si entra por Ruta 33 viene por Av. Pte. Perón desde el Oeste).
+Paradas: {json.dumps(lista_paradas, ensure_ascii=False)}
+Devolvé exclusivamente este JSON: {{"ids": [id1, id2], "consejo": "1 oración corta explicando el recorrido armado sin asteriscos."}}"""
 
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
             exito = False
 
-            modelos_respaldo = [
-                'gemini-2.5-flash-lite',
-                'gemini-2.5-flash',
-                'gemini-3.5-flash-lite',
-                'gemini-3.8-flash',
-            ]
-
-            for modelo in modelos_respaldo:
+            for modelo in ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash']:
                 try:
                     response = client.models.generate_content(
                         model=modelo,
@@ -162,13 +147,12 @@ Respondé ÚNICAMENTE con este JSON exacto (sin bloques de código markdown, sin
                                 p.orden_ia = mapa_pos[p.id]
                         Comision.objects.bulk_update(pendientes, ['orden_ia'])
 
-                        request.session['consejo_ia'] = resultado.get("consejo", "Ruta ordenada.").replace('**', '')
+                        request.session['consejo_ia'] = resultado.get("consejo", "Ruta ordenada según tu indicación.").replace('**', '')
                         exito = True
                         break
                 except Exception:
                     continue
 
-            # Plan B automático si Gemini está saturado (503): ordena por hora límite y altura descendente
             if not exito:
                 import re
                 def extraer_altura(dir_texto):
@@ -186,7 +170,7 @@ Respondé ÚNICAMENTE con este JSON exacto (sin bloques de código markdown, sin
                 for pos, p in enumerate(pendientes_orden_local, start=1):
                     p.orden_ia = pos
                 Comision.objects.bulk_update(pendientes_orden_local, ['orden_ia'])
-                request.session['consejo_ia'] = "Servidores de IA saturados: ruta ordenada automáticamente por horarios y alturas."
+                request.session['consejo_ia'] = "Ruta ordenada automáticamente por horarios y alturas."
 
     return redirigir_con_fecha(fecha_sel)
 
