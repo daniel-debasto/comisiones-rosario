@@ -84,7 +84,6 @@ def hoja_de_ruta(request):
     consejo_ia = request.session.pop('consejo_ia', None)
 
     contexto = {
-            contexto = {
         'hoy': hoy,
         'ayer': ayer,
         'manana': manana,
