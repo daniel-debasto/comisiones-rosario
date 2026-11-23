@@ -132,9 +132,15 @@ Respondé ÚNICAMENTE con este JSON exacto (sin bloques de código markdown, sin
 
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
             exito = False
-            ultimo_error = ""
 
-            for modelo in ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-4-hydrogen']:
+            modelos_respaldo = [
+                'gemini-2.5-flash-lite',
+                'gemini-2.5-flash',
+                'gemini-3.5-flash-lite',
+                'gemini-3.8-flash',
+            ]
+
+            for modelo in modelos_respaldo:
                 try:
                     response = client.models.generate_content(
                         model=modelo,
@@ -157,12 +163,28 @@ Respondé ÚNICAMENTE con este JSON exacto (sin bloques de código markdown, sin
                         request.session['consejo_ia'] = resultado.get("consejo", "Ruta ordenada.").replace('**', '')
                         exito = True
                         break
-                except Exception as e:
-                    ultimo_error = str(e)
+                except Exception:
                     continue
 
+            # Plan B automático si Gemini está saturado (503): ordena por hora límite y altura descendente
             if not exito:
-                request.session['consejo_ia'] = f"Error IA: {ultimo_error[:120]}"
+                import re
+                def extraer_altura(dir_texto):
+                    numeros = re.findall(r'\d+', dir_texto or '')
+                    return int(numeros[0]) if numeros else 0
+
+                pendientes_orden_local = sorted(
+                    pendientes,
+                    key=lambda p: (
+                        0 if p.hora_limite else 1,
+                        p.hora_limite or timezone.now().time().max,
+                        -extraer_altura(p.direccion_entrega)
+                    )
+                )
+                for pos, p in enumerate(pendientes_orden_local, start=1):
+                    p.orden_ia = pos
+                Comision.objects.bulk_update(pendientes_orden_local, ['orden_ia'])
+                request.session['consejo_ia'] = "Servidores de IA saturados: ruta ordenada automáticamente por horarios y alturas."
 
     return redirigir_con_fecha(fecha_sel)
 
