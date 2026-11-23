@@ -71,7 +71,7 @@
             background: #ffffff;
             border-top: 1px solid #e2e8f0;
             display: grid;
-            grid-template-columns: 1fr 1.2fr 1fr;
+            grid-template-columns: 1fr 1.25fr 1fr 1fr;
             align-items: center;
             padding: 8px 12px;
             box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
@@ -141,17 +141,6 @@
 
 
 <div class="container">
-
-    <div class="resumen">
-        <div class="caja-box">
-            <span class="caja-label">Cobrado</span>
-            <span class="caja-valor-verde">${{ total_cobrado|floatformat:0|intcomma }}</span>
-        </div>
-        <div class="caja-box">
-            <span class="caja-label">Por cobrar</span>
-            <span class="caja-valor-rojo">${{ total_pendiente_cobro|floatformat:0|intcomma }}</span>
-        </div>
-    </div>
 
     {% if pendientes|length > 0 %}
     <div class="{% if pendientes|length > 1 %}acciones-ruta-2{% else %}acciones-ruta-1{% endif %}">
@@ -303,6 +292,11 @@
 
     <a href="{% url 'nueva_comision' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="bottom-btn-nueva">
         ➕ Nueva
+    </a>
+
+    <a href="{% url 'historial_cobrado' %}" class="bottom-item">
+        <span class="bottom-item-icon">💵</span>
+        <span>Cobrado</span>
     </a>
 
     <a href="{% url 'cuentas_corrientes' %}" class="bottom-item">

@@ -1,0 +1,63 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial Cobrado - Comisiones Debasto</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f8fafc; color: #0f172a; padding-bottom: 40px; }
+        .navbar { background-color: #0f172a; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .btn-volver { color: white; text-decoration: none; background: #334155; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; }
+        .container { max-width: 560px; margin: 0 auto; padding: 16px; }
+        .resumen-total { background: white; border: 1px solid #e2e8f0; border-left: 5px solid #15803d; border-radius: 14px; padding: 16px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
+        .dia-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 14px; overflow: hidden; }
+        .dia-header { background: #f1f5f9; padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        .dia-fecha { font-weight: 800; font-size: 0.92rem; color: #0f172a; }
+        .dia-subtotal { font-weight: 800; font-size: 0.95rem; color: #15803d; }
+        .item-row { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; }
+        .item-row:last-child { border-bottom: none; }
+        .vacio { background: white; padding: 30px 16px; text-align: center; border-radius: 14px; border: 1px solid #e2e8f0; color: #64748b; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="{% url 'hoja_de_ruta' %}" class="btn-volver">← Ruta</a>
+    <span style="font-weight: 800;">💵 Historial Cobrado</span>
+    <span style="width: 50px;"></span>
+</nav>
+
+<div class="container">
+    <div class="resumen-total">
+        <div>
+            <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Total recaudado acumulado</span>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #15803d;">${{ total_general|floatformat:0|intcomma }}</div>
+        </div>
+        <span style="font-size: 1.8rem;">💵</span>
+    </div>
+
+    {% for dia in historial_dias %}
+        <div class="dia-card">
+            <div class="dia-header">
+                <span class="dia-fecha">📅 {{ dia.fecha|date:"l d/m/Y"|capfirst }}</span>
+                <span class="dia-subtotal">${{ dia.subtotal|floatformat:0|intcomma }}</span>
+            </div>
+            {% for item in dia.items %}
+                <div class="item-row">
+                    <div>
+                        <div style="font-weight: 700; color: #1e293b;">{{ item.cliente.nombre }}{% if item.destinatario_rosario %} → {{ item.destinatario_rosario }}{% endif %}</div>
+                        <small style="color: #64748b;">{{ item.direccion_entrega }}</small>
+                    </div>
+                    <span style="font-weight: 700; color: #15803d;">${{ item.monto|floatformat:0|intcomma }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% empty %}
+        <div class="vacio">Todavía no hay comisiones cobradas registradas.</div>
+    {% endfor %}
+</div>
+
+</body>
+</html>

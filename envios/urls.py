@@ -11,6 +11,7 @@ urlpatterns = [
     path('optimizar-ia/', views.optimizar_ruta_ia, name='optimizar_ruta_ia'),
     path('entregar/<int:comision_id>/', views.marcar_entregado, name='marcar_entregado'),
     path('cuentas/', views.cuentas_corrientes, name='cuentas_corrientes'),
+    path('cobrado/', views.historial_cobrado, name='historial_cobrado'),
     path('saldar-cliente/<int:cliente_id>/', views.saldar_cliente, name='saldar_cliente'),
     path('mapa-ruta/', views.mapa_ruta_completa, name='mapa_ruta_completa'),
 ]

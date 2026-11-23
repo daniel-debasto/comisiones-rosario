@@ -397,4 +397,30 @@ def mapa_ruta_completa(request):
         'pendientes': pendientes,
     })
 
+def historial_cobrado(request):
+    cobradas = Comision.objects.filter(pagado=True, monto__gt=0).select_related('cliente').order_by('-fecha_viaje', '-id')
+
+    dias_dict = {}
+    total_general = 0
+
+    for c in cobradas:
+        fecha_key = c.fecha_viaje
+        if fecha_key not in dias_dict:
+            dias_dict[fecha_key] = {
+                'fecha': fecha_key,
+                'subtotal': 0,
+                'items': []
+            }
+        dias_dict[fecha_key]['subtotal'] += c.monto
+        dias_dict[fecha_key]['items'].append(c)
+        total_general += c.monto
+
+    historial_dias = list(dias_dict.values())
+
+    return render(request, 'envios/cobrado.html', {
+        'historial_dias': historial_dias,
+        'total_general': total_general,
+    })
+
+
 
