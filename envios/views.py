@@ -103,72 +103,64 @@ def optimizar_ruta_ia(request):
         pendientes = list(Comision.objects.filter(fecha_viaje=fecha_sel, estado='PENDIENTE'))
 
         if len(pendientes) > 1 and settings.GEMINI_API_KEY:
-            lista_paradas = []
-            for p in pendientes:
-                lista_paradas.append({
+            lista_paradas = [
+                {
                     "id": p.id,
-                    "direccion": p.direccion_entrega,
-                    "hora_limite": p.hora_limite.strftime("%H:%M") if p.hora_limite else "Libre",
-                    "notas": p.notas or ""
-                })
+                    "dir": p.direccion_entrega,
+                    "hora": p.hora_limite.strftime("%H:%M") if p.hora_limite else None
+                }
+                for p in pendientes
+            ]
 
-            prompt = f"""
-            Sos un despachante experto en las calles y alturas de Rosario, Santa Fe, Argentina.
-            Un comisionista viene desde Firmat entrando a Rosario por Ruta 33 (Av. Presidente Peron y Circunvalacion, altura 6900 al Oeste).
+            prompt = f"""Sos un asistente experto en logística y calles de Rosario, Santa Fe. Ordená las paradas de un comisionista que viaja desde Firmat hacia Rosario.
 
-            REGLAS GEOGRAFICAS OBLIGATORIAS DE ROSARIO (100 numeros = 1 cuadra):
-            1. Numeracion Este-Oeste (ej: Cordoba, Pellegrini, Av. Pte. Peron): crece hacia el OESTE desde el rio.
-               - Altura 6000-7000 = Extremo Oeste / Circunvalacion / Ruta 33 (ej: Av. Pres. Peron 6970 es la PRIMERA parada al entrar desde Firmat).
-               - Altura 3000-4500 = Oeste / Echesortu / Parque Independencia (ej: Pellegrini 3053, San Nicolas 1450).
-               - Altura 100-2000 = Centro y Macrocentro (ej: Cordoba 1852, Juan Manuel de Rosas 957).
-            2. Numeracion Norte-Sur (ej: Espana, Corrientes, San Martin, San Nicolas, Juan Manuel de Rosas): crece hacia el SUR desde el rio.
-               - Altura 100-1200 = Centro / Rio (ej: Corrientes 999, Juan Manuel de Rosas 957).
-               - Altura 1300-2000 = Macrocentro (ej: Espana 1715).
-               - Altura 2100-3500 = Zona Sur / Abasto (ej: Espana 2730, Av. San Martin 2150).
+Contexto de ingreso a Rosario:
+- El vehículo ingresa desde el Sur/Suroeste: por Ruta 14 (atravesando Soldini hacia Av. Uriburu / zona Suroeste) o por Ruta A012 bajando por Av. Ovidio Lagos (acceso Sur) o tomando Av. de Circunvalación (A008) para bajar directo a las avenidas de acceso (Pellegrini, 27 de Febrero, Uriburu, Córdoba, Mendoza, Oroño, etc.).
 
-            ORDEN DE PRIORIDAD:
-            - Primero van obligatoriamente las entregas que tengan 'hora_limite' distinta de 'Libre' (ordenadas de mas temprana a mas tardia).
-            - Luego ordena el resto haciendo un recorrido continuo sin volver atras: entra por Oeste (alturas 6000 -> 3000), baja a Zona Sur (alturas 2000-3000 Norte-Sur), sube por Macrocentro (1500-2000) y cierra en Centro/Rio (800-1200).
+Reglas estrictas de ordenamiento:
+1. Prioridad horaria: Primero todas las paradas que tengan 'hora' asignada, ordenadas estrictamente de la más temprana a la más tardía (evaluando si conviene entrar directo por Ovidio Lagos/Uriburu o usar Circunvalación para llegar a tiempo).
+2. Recorrido continuo (sin volver atrás): Ordenar el resto de las paradas aprovechando la inercia de entrada (desde el Sur/Suroeste o bajada de Circunvalación hacia el Centro/Río) en sentido geográfico continuo:
+   - Periferia / Cercanías Circunvalación y Oeste (alturas E-O 6000 a 3000, o cercanas a bajadas de Circunvalación).
+   - Zona Sur / Abasto / Acceso Ovidio Lagos y Uriburu (alturas N-S 3500 a 2100).
+   - Macrocentro (alturas 2000 a 1300).
+   - Centro / Zona Río (alturas 1200 a 100, dejando el microcentro para el cierre del circuito si no tiene horario).
 
-            Entregas del dia:
-            {json.dumps(lista_paradas, ensure_ascii=False)}
+Paradas a ordenar: {json.dumps(lista_paradas, ensure_ascii=False)}
 
-            Devolve un JSON con este formato exacto:
-            {{
-                "ids_ordenados": [id1, id2, ...],
-                "consejo": "Explicacion corta de 2 oraciones sin asteriscos ni negritas sobre el recorrido."
-            }}
-            """
+Respondé ÚNICAMENTE con este JSON exacto (sin bloques de código markdown, sin texto extra y sin asteriscos):
+{{"ids": [id1, id2], "consejo": "1 oración corta indicando por dónde conviene entrar (Ovidio Lagos, Soldini o Circunvalación) y el sentido del recorrido."}}"""
 
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
             exito = False
 
-            for modelo in ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite']:
+            for modelo in ['gemini-2.5-flash-lite', 'gemini-2.5-flash']:
                 try:
                     response = client.models.generate_content(
                         model=modelo,
                         contents=prompt,
                         config=types.GenerateContentConfig(
                             response_mime_type="application/json",
-                            temperature=0.1,
+                            temperature=0.0,
                         ),
                     )
                     resultado = json.loads(response.text)
-                    ids_ordenados = resultado.get("ids_ordenados", [])
+                    ids_ordenados = resultado.get("ids", [])
 
                     if ids_ordenados:
-                        for posicion, comision_id in enumerate(ids_ordenados, start=1):
-                            Comision.objects.filter(id=int(comision_id)).update(orden_ia=posicion)
+                        mapa_pos = {int(cid): pos for pos, cid in enumerate(ids_ordenados, start=1)}
+                        for p in pendientes:
+                            if p.id in mapa_pos:
+                                p.orden_ia = mapa_pos[p.id]
+                        Comision.objects.bulk_update(pendientes, ['orden_ia'])
 
-                        consejo_limpio = resultado.get("consejo", "Ruta ordenada por zonas geograficas reales.").replace('**', '')
-                        request.session['consejo_ia'] = consejo_limpio
+                        request.session['consejo_ia'] = resultado.get("consejo", "Ruta ordenada.").replace('**', '')
                         exito = True
                         break
                 except Exception:
                     continue
 
             if not exito:
-                request.session['consejo_ia'] = "No se pudo conectar con Gemini en este momento. Intenta de nuevo en unos segundos."
+                request.session['consejo_ia'] = "No se pudo conectar con la IA. Intentá de nuevo en unos segundos."
 
     return redirigir_con_fecha(fecha_sel)
 

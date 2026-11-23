@@ -87,7 +87,7 @@
     {% if pendientes|length > 0 %}
     <div style="display: grid; grid-template-columns: {% if pendientes|length > 1 %}1fr 1fr{% else %}1fr{% endif %}; gap: 8px; margin-bottom: 16px;">
         {% if pendientes|length > 1 %}
-        <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin: 0;">
+                <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin: 0;" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='⏳ Ordenando...'; b.style.opacity='0.7';">
             {% csrf_token %}
             <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
             <button type="submit" class="btn" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px;">
