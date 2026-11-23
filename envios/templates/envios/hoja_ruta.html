@@ -38,7 +38,13 @@
         .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.76rem; font-weight: 700; }
         .badge-neutro { background: #f1f5f9; color: #334155; }
         .badge-hora { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-        .card-tools { display: flex; gap: 5px; align-items: center; }
+        .menu-puntos { position: relative; }
+        .menu-puntos summary { list-style: none; padding: 4px 10px; border-radius: 8px; font-size: 1.1rem; font-weight: 800; color: #334155; background: #f8fafc; border: 1px solid #e2e8f0; cursor: pointer; user-select: none; line-height: 1.2; }
+        .menu-puntos summary::-webkit-details-marker { display: none; }
+        .menu-dropdown { position: absolute; right: 0; top: 36px; background: white; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px rgba(15,23,42,0.15); min-width: 165px; z-index: 50; overflow: hidden; }
+        .menu-item { display: block; width: 100%; text-align: left; padding: 11px 14px; font-size: 0.88rem; font-weight: 600; color: #1e293b; text-decoration: none; background: white; border: none; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+        .menu-item:last-child { border-bottom: none; }
+        .menu-item.peligro { color: #b91c1c; }
         .btn-mini { padding: 5px 9px; border-radius: 8px; font-size: 0.76rem; font-weight: 700; text-decoration: none; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer; }
         .direccion { font-size: 1.28rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.3px; }
         .cliente-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; font-size: 0.92rem; color: #334155; }
@@ -94,26 +100,28 @@
                     <span class="badge badge-neutro">Libre</span>
                 {% endif %}
             </div>
-            <div class="card-tools">
-                <a href="{% url 'editar_comision' item.id %}" class="btn-mini">✏️</a>
-                {% if fecha_sel == hoy %}
-                    <form method="POST" action="{% url 'posponer_manana' item.id %}" style="margin: 0;">
+            <details class="menu-puntos">
+                <summary>⋮</summary>
+                <div class="menu-dropdown">
+                    <a href="{% url 'editar_comision' item.id %}" class="menu-item">✏️ Editar envío</a>
+                    {% if fecha_sel == hoy %}
+                        <form method="POST" action="{% url 'posponer_manana' item.id %}" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="menu-item">⏭️ Pasar a mañana</button>
+                        </form>
+                    {% else %}
+                        <form method="POST" action="{% url 'devolver_hoy' item.id %}" style="margin: 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
+                            <button type="submit" class="menu-item">⏪ Devolver a hoy</button>
+                        </form>
+                    {% endif %}
+                    <form method="POST" action="{% url 'eliminar_comision' item.id %}" style="margin: 0;" onsubmit="return confirm('¿Eliminar esta parada?');">
                         {% csrf_token %}
-                        <button type="submit" class="btn-mini">⏭️ Mañana</button>
+                        <button type="submit" class="menu-item peligro">🗑️ Eliminar</button>
                     </form>
-                {% else %}
-                    <form method="POST" action="{% url 'devolver_hoy' item.id %}" style="margin: 0;">
-                        {% csrf_token %}
-                        <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
-                        <button type="submit" class="btn-mini">⏪ Hoy</button>
-                    </form>
-                {% endif %}
-                <form method="POST" action="{% url 'eliminar_comision' item.id %}" style="margin: 0;" onsubmit="return confirm('¿Eliminar esta parada?');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-mini">🗑️</button>
-                </form>
-            </div>
-        </div>
+                </div>
+            </details>
 
         <div class="direccion">{{ item.direccion_entrega }}</div>
         <div class="cliente-row">
@@ -192,5 +200,13 @@
     {% endif %}
 
 </div>
+
+<script>
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('.menu-puntos[open]').forEach(function(menu) {
+        if (!menu.contains(e.target)) menu.removeAttribute('open');
+    });
+});
+</script>
 </body>
 </html>

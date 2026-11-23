@@ -4,15 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa de Ruta - Rosario</title>
-    <link rel="stylesheet" href="https://unpkg.com" />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: #f1f5f9; }
+        body { background: #f8fafc; color: #0f172a; padding-bottom: 30px; }
         .navbar { background: #0f172a; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
         .btn-volver { color: white; text-decoration: none; background: #334155; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; }
-        #mapa { width: 100%; height: 68vh; }
+        #mapa { width: 100%; height: 62vh; background: #e2e8f0; }
         .lista { padding: 14px 16px; max-width: 560px; margin: 0 auto; }
-        .item { background: white; padding: 10px 12px; border-radius: 10px; margin-bottom: 8px; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .item { background: white; padding: 11px 14px; border-radius: 10px; margin-bottom: 8px; font-size: 0.9rem; border: 1px solid #e2e8f0; border-left: 4px solid #1e3a8a; }
     </style>
 </head>
 <body>
@@ -27,40 +26,58 @@
 
 <div class="lista">
     {% for p in pendientes %}
-        <div class="item"><strong>#{{ forloop.counter }}</strong> · {{ p.direccion_entrega }} <span style="color: #64748b;">({{ p.cliente.nombre }})</span></div>
+        <div class="item">
+            <strong>#{{ forloop.counter }}</strong> · {{ p.direccion_entrega }}
+            <span style="color: #64748b;">({{ p.cliente.nombre }}{% if p.destinatario_rosario %} → {{ p.destinatario_rosario }}{% endif %})</span>
+        </div>
+    {% empty %}
+        <div class="item">No hay paradas pendientes para graficar en esta fecha.</div>
     {% endfor %}
 </div>
 
-<script src="https://unpkg.com"></script>
+<div id="datos-puntos" data-puntos="{{ puntos_json|escape }}" style="display:none;"></div>
+
 <script>
-    const puntos = {{ puntos_json|safe }};
-    const mapa = L.map('mapa').setView([-32.9507, -60.6665], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-    }).addTo(mapa);
+    const linkCss = document.createElement('link');
+    linkCss.rel = 'stylesheet';
+    linkCss.href = 'https://unpkg.' + 'com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(linkCss);
 
-    const coords = [];
-    puntos.forEach(p => {
-        if (p.lat && p.lng) {
-            coords.push([p.lat, p.lng]);
-            const icono = L.divIcon({
-                className: '',
-                html: `<div style="background:#2563eb;color:white;font-weight:800;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);">${p.orden}</div>`,
-                iconSize:,
-                iconAnchor: [14, 14]
-            });
-            L.marker([p.lat, p.lng], { icon: icono })
-                .addTo(mapa)
-                .bindPopup(`<b>#${p.orden} - ${p.direccion}</b><br>${p.cliente}`);
-        }
-    });
+    const scriptJs = document.createElement('script');
+    scriptJs.src = 'https://unpkg.' + 'com/leaflet@1.9.4/dist/leaflet.js';
+    scriptJs.onload = function() {
+        const contenedor = document.getElementById('datos-puntos');
+        const puntos = JSON.parse(contenedor.getAttribute('data-puntos') || '[]');
+        const mapa = L.map('mapa').setView(Array(-32.9507, -60.6665), 12);
 
-    if (coords.length > 0) {
-        if (coords.length > 1) {
-            L.polyline(coords, { color: '#2563eb', weight: 4, opacity: 0.8 }).addTo(mapa);
+        L.tileLayer('https://{s}.tile.openstreetmap.' + 'org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(mapa);
+
+        const coords = Array();
+        puntos.forEach(function(p) {
+            if (p.lat && p.lng) {
+                coords.push(Array(p.lat, p.lng));
+                const icono = L.divIcon({
+                    className: '',
+                    html: '<div style="background:#1e3a8a;color:white;font-weight:800;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);">' + p.orden + '</div>',
+                    iconSize: Array(28, 28),
+                    iconAnchor: Array(14, 14)
+                });
+                L.marker(Array(p.lat, p.lng), { icon: icono })
+                    .addTo(mapa)
+                    .bindPopup('<b>#' + p.orden + ' - ' + p.direccion + '</b><br>' + p.cliente);
+            }
+        });
+
+        if (coords.length > 0) {
+            if (coords.length > 1) {
+                L.polyline(coords, { color: '#2563eb', weight: 4, opacity: 0.85 }).addTo(mapa);
+            }
+            mapa.fitBounds(coords, { padding: Array(35, 35) });
         }
-        mapa.fitBounds(coords, { padding: [35, 35] });
-    }
+    };
+    document.body.appendChild(scriptJs);
 </script>
 </body>
 </html>
