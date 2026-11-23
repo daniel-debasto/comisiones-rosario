@@ -255,6 +255,8 @@ def posponer_manana(request, comision_id):
         comision.fecha_viaje = fecha_anterior + timedelta(days=1)
         comision.orden_ia = 99
         comision.save()
+        request.session['consejo_ia'] = f"Parada en {comision.direccion_entrega} pasada al {comision.fecha_viaje.strftime('%d/%m')}."
+    return redirigir_con_fecha(fecha_anterior)
 
 def devolver_hoy(request, comision_id):
     comision = get_object_or_404(Comision, id=comision_id)
