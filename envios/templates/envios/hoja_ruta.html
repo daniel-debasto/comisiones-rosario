@@ -7,53 +7,46 @@
     <title>Hoja de Ruta - Firmat / Rosario</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f1f5f9; color: #1e293b; padding-bottom: 40px; }
-        .navbar { background-color: #0f172a; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        body { background-color: #f8fafc; color: #0f172a; padding-bottom: 40px; }
+        .navbar { background-color: #0f172a; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .navbar-title { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.3px; }
-        .btn-nueva { background-color: #f59e0b; color: #0f172a; text-decoration: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(245,158,11,0.3); }
+        .btn-nueva { background-color: #2563eb; color: white; text-decoration: none; padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; }
         .fecha-bar { background: #1e293b; padding: 10px 16px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
-        .fecha-pill { padding: 6px 12px; border-radius: 20px; text-decoration: none; font-size: 0.82rem; font-weight: 700; background: #334155; color: #e2e8f0; }
-        .fecha-pill.activa { background: #3b82f6; color: white; }
-        .fecha-input { padding: 5px 8px; border-radius: 8px; border: none; font-size: 0.82rem; font-weight: 600; background: #f8fafc; color: #0f172a; }
+        .fecha-pill { padding: 6px 12px; border-radius: 20px; text-decoration: none; font-size: 0.82rem; font-weight: 600; background: #334155; color: #cbd5e1; }
+        .fecha-pill.activa { background: #ffffff; color: #0f172a; font-weight: 700; }
+        .fecha-pill.deudas { background: #334155; color: #fca5a5; border: 1px solid #7f1d1d; }
+        .fecha-input { padding: 5px 8px; border-radius: 8px; border: none; font-size: 0.82rem; font-weight: 600; background: #f1f5f9; color: #0f172a; }
         .container { max-width: 560px; margin: 0 auto; padding: 16px; }
-        .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-        .caja-box { background: white; padding: 14px; border-radius: 14px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-        .caja-label { font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px; letter-spacing: 0.4px; }
-        .caja-valor-verde { color: #16a34a; font-size: 1.45rem; font-weight: 800; }
-        .caja-valor-rojo { color: #dc2626; font-size: 1.45rem; font-weight: 800; }
-        .seccion-titulo { font-size: 0.82rem; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.5px; }
-        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 3px 10px rgba(15,23,42,0.06); border-left: 6px solid #3b82f6; }
+        .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+        .caja-box { background: white; padding: 14px; border-radius: 14px; text-align: center; border: 1px solid #e2e8f0; }
+        .caja-label { font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .caja-valor-verde { color: #15803d; font-size: 1.4rem; font-weight: 800; }
+        .caja-valor-rojo { color: #b91c1c; font-size: 1.4rem; font-weight: 800; }
+        .seccion-titulo { font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.6px; }
+        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 14px; border: 1px solid #e2e8f0; border-left: 5px solid #1e3a8a; box-shadow: 0 1px 3px rgba(15,23,42,0.04); }
         .card.urgente { border-left-color: #dc2626; }
         .badges { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 6px; flex-wrap: wrap; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.76rem; font-weight: 700; }
-        .badge-zona { background: #dbeafe; color: #1d4ed8; }
-        .badge-hora { background: #fee2e2; color: #b91c1c; }
-        .badge-libre { background: #f1f5f9; color: #475569; }
+        .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.76rem; font-weight: 700; }
+        .badge-neutro { background: #f1f5f9; color: #334155; }
+        .badge-hora { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
         .card-tools { display: flex; gap: 5px; align-items: center; }
-        .btn-mini { padding: 5px 8px; border-radius: 8px; font-size: 0.76rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; }
-        .btn-editar { background: #f1f5f9; color: #334155; }
-        .btn-posponer { background: #fef3c7; color: #b45309; }
-        .btn-borrar { background: #fee2e2; color: #b91c1c; }
-        .direccion { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.3px; }
+        .btn-mini { padding: 5px 9px; border-radius: 8px; font-size: 0.76rem; font-weight: 700; text-decoration: none; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer; }
+        .direccion { font-size: 1.28rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.3px; }
         .cliente-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; font-size: 0.92rem; color: #334155; }
-        .tipo-pill { padding: 3px 9px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
-        .tipo-SOBRE { background: #e0f2fe; color: #0369a1; }
-        .tipo-BULTO { background: #ffedd5; color: #c2410c; }
-        .tipo-TRAMITE { background: #f3e8ff; color: #7e22ce; }
-        .notas { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 8px 12px; border-radius: 10px; font-size: 0.86rem; margin-bottom: 12px; }
+        .tipo-pill { padding: 3px 9px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: #475569; }
+        .notas { background: #f8fafc; border-left: 3px solid #94a3b8; color: #475569; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 12px; }
         .precio-fila { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 10px; margin-bottom: 12px; }
-        .precio { font-size: 1.35rem; font-weight: 800; color: #0f172a; }
-        .estado-pago-si { background: #dcfce7; color: #15803d; }
-        .estado-pago-no { background: #fef9c3; color: #a16207; }
-        .btn { display: block; width: 100%; text-align: center; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.94rem; text-decoration: none; border: none; cursor: pointer; margin-bottom: 8px; }
-        .btn-maps { background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; }
-        .btn-waze { background: #ecfeff; color: #0e7490; border: 1.5px solid #a5f3fc; }
+        .precio { font-size: 1.32rem; font-weight: 800; color: #0f172a; }
+        .estado-pago-si { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+        .estado-pago-no { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+        .btn { display: block; width: 100%; text-align: center; padding: 11px; border-radius: 10px; font-weight: 700; font-size: 0.92rem; text-decoration: none; border: none; cursor: pointer; margin-bottom: 8px; }
+        .btn-nav { background: #ffffff; color: #0f172a; border: 1.5px solid #cbd5e1; margin-bottom: 0; }
         .acciones-form { display: flex; gap: 8px; }
-        .btn-cobrado { background: #16a34a; color: white; flex: 2; margin-bottom: 0; }
-        .btn-entregado { background: #64748b; color: white; flex: 1; margin-bottom: 0; }
-        .vacio-box { background: white; border-radius: 14px; padding: 32px 16px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.06); }
-        .card-completada { background: white; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; opacity: 0.8; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-        .tachado { text-decoration: line-through; font-weight: 700; }
+        .btn-cobrado { background: #15803d; color: white; flex: 2; margin-bottom: 0; }
+        .btn-entregado { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; flex: 1; margin-bottom: 0; }
+        .vacio-box { background: white; border-radius: 14px; padding: 32px 16px; text-align: center; border: 1px solid #e2e8f0; }
+        .card-completada { background: white; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; opacity: 0.75; border: 1px solid #e2e8f0; }
+        .tachado { text-decoration: line-through; font-weight: 700; color: #475569; }
     </style>
 </head>
 <body>
@@ -66,7 +59,7 @@
 <div class="fecha-bar">
     <a href="{% url 'hoja_de_ruta' %}?fecha={{ hoy|date:'Y-m-d' }}" class="fecha-pill {% if fecha_sel == hoy %}activa{% endif %}">Hoy ({{ hoy|date:"d/m" }})</a>
     <a href="{% url 'hoja_de_ruta' %}?fecha={{ manana|date:'Y-m-d' }}" class="fecha-pill {% if fecha_sel == manana %}activa{% endif %}">Mañana ({{ manana|date:"d/m" }})</a>
-    <a href="{% url 'cuentas_corrientes' %}" class="fecha-pill" style="background: #7f1d1d; color: #fecaca;">💰 Deudas ({{ deudores_count }})</a>
+    <a href="{% url 'cuentas_corrientes' %}" class="fecha-pill deudas">💰 Deudas ({{ deudores_count }})</a>
     <form method="GET" action="{% url 'hoja_de_ruta' %}" style="margin: 0;">
         <input type="date" name="fecha" value="{{ fecha_sel|date:'Y-m-d' }}" onchange="this.form.submit()" class="fecha-input">
     </form>
@@ -86,27 +79,31 @@
     </div>
 
     {% if pendientes|length > 0 %}
-    <div style="display: grid; grid-template-columns: {% if pendientes.count > 1 %}1fr 1fr{% else %}1fr{% endif %}; gap: 8px; margin-bottom: 16px;">
+    <div style="display: grid; grid-template-columns: {% if pendientes|length > 1 %}1fr 1fr{% else %}1fr{% endif %}; gap: 8px; margin-bottom: 16px;">
         {% if pendientes|length > 1 %}
         <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin: 0;">
             {% csrf_token %}
             <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
-            <button type="submit" class="btn" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px;">
+            <button type="submit" class="btn" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px;">
                 🤖 Ordenar con IA
             </button>
         </form>
         {% endif %}
-        {% if url_ruta_completa %}
-        <a href="{% url 'mapa_ruta_completa' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="btn" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px; display: flex; align-items: center; justify-content: center;">
+        <a href="{% url 'mapa_ruta_completa' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="btn" style="background: white; color: #0f172a; border: 1.5px solid #cbd5e1; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px; display: flex; align-items: center; justify-content: center;">
             🗺️ Ruta Completa
         </a>
-        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if consejo_ia %}
+    <div style="background: #f1f5f9; border-left: 4px solid #0f172a; color: #1e293b; padding: 11px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.86rem;">
+        <strong>🤖 Info de Ruta:</strong> {{ consejo_ia }}
     </div>
     {% endif %}
 
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <span class="seccion-titulo">Pendientes</span>
-        <span style="background: #0f172a; color: #f8fafc; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 800;">
+        <span style="background: #0f172a; color: #f8fafc; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700;">
             📦 Faltan: {{ pendientes|length }} de {{ pendientes|length|add:entregadas.count }}
         </span>
     </div>
@@ -115,30 +112,30 @@
     <div class="card {% if item.hora_limite %}urgente{% endif %}">
         <div class="badges">
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <span class="badge badge-zona">🏁 Parada #{{ forloop.counter }}</span>
+                <span class="badge badge-neutro">Parada #{{ forloop.counter }}</span>
                 {% if item.hora_limite %}
-                    <span class="badge badge-hora">⏰ Antes de {{ item.hora_limite|time:"H:i" }}</span>
+                    <span class="badge badge-hora">⏰ {{ item.hora_limite|time:"H:i" }}</span>
                 {% else %}
-                    <span class="badge badge-libre">Horario libre</span>
+                    <span class="badge badge-neutro">Libre</span>
                 {% endif %}
             </div>
             <div class="card-tools">
-                <a href="{% url 'editar_comision' item.id %}" class="btn-mini btn-editar">✏️</a>
+                <a href="{% url 'editar_comision' item.id %}" class="btn-mini">✏️</a>
                 {% if fecha_sel == hoy %}
                     <form method="POST" action="{% url 'posponer_manana' item.id %}" style="margin: 0;">
                         {% csrf_token %}
-                        <button type="submit" class="btn-mini btn-posponer">⏭️ Mañana</button>
+                        <button type="submit" class="btn-mini">⏭️ Mañana</button>
                     </form>
                 {% else %}
                     <form method="POST" action="{% url 'devolver_hoy' item.id %}" style="margin: 0;">
                         {% csrf_token %}
                         <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
-                        <button type="submit" class="btn-mini" style="background: #dbeafe; color: #1d4ed8;">⏪ Hoy</button>
+                        <button type="submit" class="btn-mini">⏪ Hoy</button>
                     </form>
                 {% endif %}
                 <form method="POST" action="{% url 'eliminar_comision' item.id %}" style="margin: 0;" onsubmit="return confirm('¿Eliminar esta parada?');">
                     {% csrf_token %}
-                    <button type="submit" class="btn-mini btn-borrar">🗑️</button>
+                    <button type="submit" class="btn-mini">🗑️</button>
                 </form>
             </div>
         </div>
