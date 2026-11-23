@@ -13,7 +13,7 @@
     <link rel="manifest" href="{% static 'envios/manifest.json' %}">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .body { background-color: #f8fafc; color: #0f172a; padding-bottom: 40px; }
+        body { background-color: #f8fafc; color: #0f172a; padding-bottom: 40px; }
         .navbar { background-color: #0f172a; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .navbar-title { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.3px; }
         .btn-nueva { background-color: #2563eb; color: white; text-decoration: none; padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; }
@@ -24,7 +24,6 @@
         .fecha-centro input[type="date"] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
         .btn-hoy-chip { background: #2563eb; color: white; text-decoration: none; padding: 6px 10px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; }
         .fecha-pill.deudas { background: #334155; color: #fca5a5; border: 1px solid #7f1d1d; padding: 6px 11px; border-radius: 10px; text-decoration: none; font-size: 0.8rem; font-weight: 700; }
-        .fecha-input { padding: 5px 8px; border-radius: 8px; border: none; font-size: 0.82rem; font-weight: 600; background: #f1f5f9; color: #0f172a; }
         .container { max-width: 560px; margin: 0 auto; padding: 16px; }
         .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
         .caja-box { background: white; padding: 14px; border-radius: 14px; text-align: center; border: 1px solid #e2e8f0; }
@@ -32,21 +31,21 @@
         .caja-valor-verde { color: #15803d; font-size: 1.4rem; font-weight: 800; }
         .caja-valor-rojo { color: #b91c1c; font-size: 1.4rem; font-weight: 800; }
         .seccion-titulo { font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.6px; }
-        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 14px; border: 1px solid #e2e8f0; border-left: 5px solid #1e3a8a; box-shadow: 0 1px 3px rgba(15,23,42,0.04); }
+        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #e2e8f0; border-left: 5px solid #1e3a8a; box-shadow: 0 2px 6px rgba(15,23,42,0.05); }
         .card.urgente { border-left-color: #dc2626; }
-        .badges { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 6px; flex-wrap: wrap; }
+        .badges { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 6px; }
         .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.76rem; font-weight: 700; }
         .badge-neutro { background: #f1f5f9; color: #334155; }
         .badge-hora { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .btn-mini { padding: 5px 9px; border-radius: 8px; font-size: 0.76rem; font-weight: 700; text-decoration: none; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer; }
         .menu-puntos { position: relative; }
-        .menu-puntos summary { list-style: none; padding: 4px 10px; border-radius: 8px; font-size: 1.1rem; font-weight: 800; color: #334155; background: #f8fafc; border: 1px solid #e2e8f0; cursor: pointer; user-select: none; line-height: 1.2; }
+        .menu-puntos summary { list-style: none; padding: 4px 11px; border-radius: 8px; font-size: 1.15rem; font-weight: 800; color: #334155; background: #f8fafc; border: 1px solid #e2e8f0; cursor: pointer; user-select: none; line-height: 1.2; }
         .menu-puntos summary::-webkit-details-marker { display: none; }
-        .menu-dropdown { position: absolute; right: 0; top: 36px; background: white; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px rgba(15,23,42,0.15); min-width: 165px; z-index: 50; overflow: hidden; }
+        .menu-dropdown { position: absolute; right: 0; top: 36px; background: white; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px rgba(15,23,42,0.15); min-width: 170px; z-index: 50; overflow: hidden; }
         .menu-item { display: block; width: 100%; text-align: left; padding: 11px 14px; font-size: 0.88rem; font-weight: 600; color: #1e293b; text-decoration: none; background: white; border: none; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
         .menu-item:last-child { border-bottom: none; }
         .menu-item.peligro { color: #b91c1c; }
-        .btn-mini { padding: 5px 9px; border-radius: 8px; font-size: 0.76rem; font-weight: 700; text-decoration: none; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer; }
-        .direccion { font-size: 1.28rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.3px; }
+        .direccion { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.3px; }
         .cliente-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; font-size: 0.92rem; color: #334155; }
         .tipo-pill { padding: 3px 9px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: #475569; }
         .notas { background: #f8fafc; border-left: 3px solid #94a3b8; color: #475569; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 12px; }
@@ -62,7 +61,9 @@
         .vacio-box { background: white; border-radius: 14px; padding: 32px 16px; text-align: center; border: 1px solid #e2e8f0; }
         .card-completada { background: white; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; opacity: 0.75; border: 1px solid #e2e8f0; }
         .tachado { text-decoration: line-through; font-weight: 700; color: #475569; }
-    </style>
+        .acciones-ruta-1 { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 16px; }
+        .acciones-ruta-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  </style>
 </head>
 <body>
 
@@ -89,6 +90,49 @@
     </div>
 </div>
 
+<div class="container">
+
+    <div class="resumen">
+        <div class="caja-box">
+            <span class="caja-label">Cobrado</span>
+            <span class="caja-valor-verde">${{ total_cobrado|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="caja-box">
+            <span class="caja-label">Por cobrar</span>
+            <span class="caja-valor-rojo">${{ total_pendiente_cobro|floatformat:0|intcomma }}</span>
+        </div>
+    </div>
+
+    {% if pendientes|length > 0 %}
+    <div class="{% if pendientes|length > 1 %}acciones-ruta-2{% else %}acciones-ruta-1{% endif %}">
+        {% if pendientes|length > 1 %}
+        <form method="POST" action="{% url 'optimizar_ruta_ia' %}" style="margin: 0;" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='⏳ Ordenando...'; b.style.opacity='0.7';">
+            {% csrf_token %}
+            <input type="hidden" name="fecha_viaje" value="{{ fecha_sel|date:'Y-m-d' }}">
+            <button type="submit" class="btn" style="background: #0f172a; color: white; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px;">
+                🤖 Ordenar con IA
+            </button>
+        </form>
+        {% endif %}
+        <a href="{% url 'mapa_ruta_completa' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="btn" style="background: white; color: #0f172a; border: 1.5px solid #cbd5e1; margin-bottom: 0; font-size: 0.86rem; padding: 12px 8px; display: flex; align-items: center; justify-content: center;">
+            🗺️ Ruta Completa
+        </a>
+    </div>
+    {% endif %}
+
+        {% if consejo_ia %}
+    <div style="background: #f1f5f9; border-left: 4px solid #0f172a; color: #1e293b; padding: 11px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.86rem;">
+        <strong>🤖 Info de Ruta:</strong> {{ consejo_ia }}
+    </div>
+    {% endif %}
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="seccion-titulo">Pendientes</span>
+        <span style="background: #0f172a; color: #f8fafc; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700;">
+            📦 Faltan: {{ pendientes|length }} de {{ pendientes|length|add:entregadas.count }}
+        </span>
+    </div>
+
     {% for item in pendientes %}
     <div class="card {% if item.hora_limite %}urgente{% endif %}">
         <div class="badges">
@@ -100,6 +144,7 @@
                     <span class="badge badge-neutro">Libre</span>
                 {% endif %}
             </div>
+
             <details class="menu-puntos">
                 <summary>⋮</summary>
                 <div class="menu-dropdown">
@@ -122,11 +167,13 @@
                     </form>
                 </div>
             </details>
+        </div>
 
         <div class="direccion">{{ item.direccion_entrega }}</div>
+
         <div class="cliente-row">
             <span>👤 <strong>{{ item.cliente.nombre }}</strong>{% if item.destinatario_rosario %} → 🏢 <strong>{{ item.destinatario_rosario }}</strong>{% endif %}</span>
-            <span class="tipo-pill tipo-{{ item.tipo }}">
+            <span class="tipo-pill">
                 {% if item.tipo == 'SOBRE' %}📄 Sobre{% elif item.tipo == 'BULTO' %}📦 Carga{% else %}🏛️ Trámite{% endif %}
             </span>
         </div>
@@ -138,21 +185,20 @@
         <div class="precio-fila">
             <span class="precio">${{ item.monto|floatformat:0|intcomma }}</span>
             {% if item.pagado %}
-                <span class="badge estado-pago-si">Ya pagado</span>
+                <span class="badge estado-pago-si">Pagado</span>
             {% else %}
                 <span class="badge estado-pago-no">Falta cobrar</span>
             {% endif %}
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-            <a href="{{ item.url_maps }}" class="btn btn-maps" style="margin-bottom: 0;">
+            <a href="{{ item.url_maps }}" class="btn btn-nav">
                 🗺️ Google Maps
             </a>
-            <a href="{{ item.url_waze }}" class="btn btn-waze" style="margin-bottom: 0;">
+            <a href="{{ item.url_waze }}" class="btn btn-nav">
                 🚗 Waze
             </a>
         </div>
-
 
         <form method="POST" action="{% url 'marcar_entregado' item.id %}" class="acciones-form">
             {% csrf_token %}
@@ -167,8 +213,6 @@
         </form>
     </div>
     {% empty %}
-
-
         <div class="vacio-box">
             <div style="font-size: 2.5rem; margin-bottom: 10px;">📋</div>
             <h3 style="color: #1e293b; margin-bottom: 6px; font-weight: 800;">Hoja de ruta vacía</h3>
@@ -180,20 +224,19 @@
     {% endfor %}
 
     {% if entregadas %}
-    <div class="seccion-titulo" style="margin-top: 24px;">Entregadas ({{ entregadas.count }})</div>
-
+    <div class="seccion-titulo" style="margin-top: 24px; margin-bottom: 12px;">Completadas ({{ entregadas.count }})</div>
     {% for item in entregadas %}
-            <div class="card-completada">
+        <div class="card-completada">
             <div>
                 <div class="tachado">{{ item.direccion_entrega }}</div>
-                <small style="color: #64748b;">{{ item.cliente.nombre }} · ${{ item.monto }}</small>
+                <small style="color: #64748b;">{{ item.cliente.nombre }}{% if item.destinatario_rosario %} → {{ item.destinatario_rosario }}{% endif %} · ${{ item.monto|floatformat:0|intcomma }}</small>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
                 <span class="badge {% if item.pagado %}estado-pago-si{% else %}estado-pago-no{% endif %}">
                     {% if item.pagado %}Cobrado{% else %}Debe{% endif %}
                 </span>
-                <a href="https://wa.me{{ item.cliente.nombre|urlencode }},%20ya%20realic%C3%A9%20la%20entrega%20en%20{{ item.direccion_entrega|urlencode }}." class="btn-mini" style="background: #dcfce7; color: #15803d;">📲</a>
-                <a href="{% url 'editar_comision' item.id %}" class="btn-mini btn-editar">✏️</a>
+                <a href="https://whatsapp.com{{ item.cliente.nombre|urlencode }},%20ya%20realic%C3%A9%20la%20entrega%20en%20{{ item.direccion_entrega|urlencode }}." class="btn-mini">📲</a>
+                <a href="{% url 'editar_comision' item.id %}" class="btn-mini">✏️</a>
             </div>
         </div>
     {% endfor %}
