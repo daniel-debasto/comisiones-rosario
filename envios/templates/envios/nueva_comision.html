@@ -123,45 +123,58 @@ function capitalizar(texto) {
     return texto.replace(/\b\w/g, function(letra) { return letra.toUpperCase(); });
 }
 
-function separarDatosVoz(frase) {
-    let limpia = frase.replace(/^cliente\s+/i, '').replace(/\.$/, '').replace(/\s+\./g, '.').trim();
-    let clienteFirmat = '';
-    let clienteRosario = '';
+function separarTresCampos(frase) {
+    let limpia = frase.replace(/\.$/, '').replace(/\s+\./g, '.').trim();
+    let firmat = '';
+    let rosario = '';
     let direccion = '';
 
-    // 1. Extraer direccion al final (separada por "direccion", "en", o calle + altura)
-    const matchDir = limpia.match(/^(.+?)(?:,|\s+(?:dirección|direccion|en)\s+|\s+(?=(?:av\.?|avenida|bv\.?|boulevard|calle|pasaje|pje\.?)\s+))([a-záéíóúñ0-9\s\.]+)$/i);
-    let parteClientes = limpia;
+    // Caso 1: Dictado con etiquetas explícitas ("Cliente Firmat ... Cliente Rosario ... dirección ...")
+    const tieneEtiquetas = /cliente\s+firmat/i.test(limpia) || /cliente\s+rosario/i.test(limpia);
+    if (tieneEtiquetas) {
+        const matchFirmat = limpia.match(/cliente\s+firmat\s+(.+?)(?=,|\s+cliente\s+rosario|\s+direcci[oó]n|\s+en\s+|$)/i);
+        const matchRosario = limpia.match(/cliente\s+rosario\s+(.+?)(?=,|\s+direcci[oó]n|\s+en\s+|$)/i);
+        const matchDir = limpia.match(/(?:direcci[oó]n|en)\s+(.+)$/i);
 
-    if (matchDir) {
-        parteClientes = matchDir.item(1).trim();
-        direccion = capitalizar(matchDir.item(2).trim());
+        if (matchFirmat) firmat = capitalizar(matchFirmat[1].trim());
+        if (matchRosario) rosario = capitalizar(matchRosario[1].trim());
+        if (matchDir) direccion = capitalizar(matchDir[1].trim());
+
+        return { firmat: firmat, rosario: rosario, direccion: direccion };
+    }
+
+    // Caso 2: Dictado fluido ("Estudio Pérez para Friorep en España 2730" o "Pérez a Friorep dirección Córdoba 1450")
+    let parteClientes = limpia;
+    const matchDirFluida = limpia.match(/^(.+?)(?:,|\s+(?:direcci[oó]n|en)\s+|\s+(?=(?:av\.?|avenida|bv\.?|boulevard|calle|pasaje|pje\.?)\s+))([a-záéíóúñ0-9\s\.]+)$/i);
+    if (matchDirFluida) {
+        parteClientes = matchDirFluida[1].trim();
+        direccion = capitalizar(matchDirFluida[2].trim());
     } else {
         const matchCalleNum = limpia.match(/^(.+?)\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+){0,2}\s+\d{1,5}(?:\s*bis)?)$/i);
         if (matchCalleNum) {
-            parteClientes = matchCalleNum.item(1).trim();
-            direccion = capitalizar(matchCalleNum.item(2).trim());
+            parteClientes = matchCalleNum[1].trim();
+            direccion = capitalizar(matchCalleNum[2].trim());
         }
     }
 
-    // 2. Si dijo "Estudio Perez para Friorep" o "Estudio Perez a Friorep", separa Cliente Firmat y Cliente Rosario
-    const matchDest = parteClientes.match(/^(.+?)\s+(?:para|a|destinatario)\s+(.+)$/i);
-    if (matchDest) {
-        clienteFirmat = capitalizar(matchDest.item(1).trim());
-        clienteRosario = capitalizar(matchDest.item(2).trim());
+    parteClientes = parteClientes.replace(/^cliente\s+/i, '').trim();
+    const matchDosClientes = parteClientes.match(/^(.+?)(?:,|\s+(?:para|a|destinatario)\s+)(.+)$/i);
+    if (matchDosClientes) {
+        firmat = capitalizar(matchDosClientes[1].trim());
+        rosario = capitalizar(matchDosClientes[2].trim());
     } else {
-        clienteFirmat = capitalizar(parteClientes);
+        firmat = capitalizar(parteClientes);
     }
 
-    return { clienteFirmat: clienteFirmat, clienteRosario: clienteRosario, direccion: direccion };
+    return { firmat: firmat, rosario: rosario, direccion: direccion };
 }
 
 function dictarTodo() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const btn = document.getElementById('btn-voz-todo');
     const estado = document.getElementById('estado-voz');
-    const inputCliente = document.getElementById('input-cliente');
-    const inputDestinatario = document.getElementById('input-destinatario');
+    const inputFirmat = document.getElementById('input-cliente');
+    const inputRosario = document.getElementById('input-destinatario');
     const inputDireccion = document.getElementById('input-direccion');
 
     if (!SpeechRecognition) {
@@ -178,23 +191,31 @@ function dictarTodo() {
         btn.style.background = '#fee2e2';
         btn.style.color = '#b91c1c';
         btn.style.borderColor = '#dc2626';
-        btn.textContent = '⏹️ Escuchando... Ej: "Pérez para Friorep en España 2730"';
+        btn.textContent = '⏹️ Decí: "Cliente Firmat ..., Cliente Rosario ..., dirección ..."';
         estado.textContent = "";
     };
 
     recognition.onresult = function(event) {
-        const texto = event.results.item(0).item(0).transcript;
-        const datos = separarDatosVoz(texto);
+        const texto = event.results[0][0].transcript;
+        const datos = separarTresCampos(texto);
 
-        if (datos.clienteFirmat) inputCliente.value = datos.clienteFirmat;
-        if (datos.clienteRosario) inputDestinatario.value = datos.clienteRosario;
+        if (datos.firmat) inputFirmat.value = datos.firmat;
+        if (datos.rosario) inputRosario.value = datos.rosario;
         if (datos.direccion) {
             inputDireccion.value = datos.direccion;
-            estado.textContent = "✅ Datos cargados por voz";
         } else {
             autocompletarDireccionCliente();
-            estado.textContent = "✅ Cliente cargado";
         }
+
+        const cargados = [
+            datos.firmat ? 'Firmat' : '',
+            datos.rosario ? 'Rosario' : '',
+            inputDireccion.value ? 'Dirección' : ''
+        ].filter(Boolean);
+
+        estado.textContent = cargados.length
+            ? "✅ Cargado: " + cargados.join(' + ')
+            : "⚠️ No se entendió bien. Probá decir: 'Pérez para Friorep en España 2730'";
     };
 
     recognition.onerror = function() {
@@ -205,7 +226,7 @@ function dictarTodo() {
         btn.style.background = '#eff6ff';
         btn.style.color = '#1d4ed8';
         btn.style.borderColor = '#3b82f6';
-        btn.textContent = '🎙️ Dictar Cliente y Dirección por voz';
+        btn.textContent = '🎙️ Dictar Cliente Firmat, Rosario y Dirección';
     };
 
     recognition.start();
