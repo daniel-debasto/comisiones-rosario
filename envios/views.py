@@ -132,8 +132,9 @@ Respondé ÚNICAMENTE con este JSON exacto (sin bloques de código markdown, sin
 
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
             exito = False
+            ultimo_error = ""
 
-            for modelo in ['gemini-2.5-flash-lite', 'gemini-2.5-flash']:
+            for modelo in ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-4-hydrogen']:
                 try:
                     response = client.models.generate_content(
                         model=modelo,
@@ -144,7 +145,7 @@ Respondé ÚNICAMENTE con este JSON exacto (sin bloques de código markdown, sin
                         ),
                     )
                     resultado = json.loads(response.text)
-                    ids_ordenados = resultado.get("ids", [])
+                    ids_ordenados = resultado.get("ids") or resultado.get("ids_ordenados") or []
 
                     if ids_ordenados:
                         mapa_pos = {int(cid): pos for pos, cid in enumerate(ids_ordenados, start=1)}
@@ -156,11 +157,12 @@ Respondé ÚNICAMENTE con este JSON exacto (sin bloques de código markdown, sin
                         request.session['consejo_ia'] = resultado.get("consejo", "Ruta ordenada.").replace('**', '')
                         exito = True
                         break
-                except Exception:
+                except Exception as e:
+                    ultimo_error = str(e)
                     continue
 
             if not exito:
-                request.session['consejo_ia'] = "No se pudo conectar con la IA. Intentá de nuevo en unos segundos."
+                request.session['consejo_ia'] = f"Error IA: {ultimo_error[:120]}"
 
     return redirigir_con_fecha(fecha_sel)
 
