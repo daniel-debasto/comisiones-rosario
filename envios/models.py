@@ -26,6 +26,7 @@ class Comision(models.Model):
 
     fecha_viaje = models.DateField(default=timezone.localdate)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='comisiones')
+    destinatario_rosario = models.CharField(max_length=150, blank=True, null=True)
     tipo = models.CharField(max_length=20, choices=TIPOS, default='SOBRE')
     direccion_entrega = models.CharField(max_length=255)
     hora_limite = models.TimeField(blank=True, null=True, help_text="Dejar vacío si no tiene horario fijo")

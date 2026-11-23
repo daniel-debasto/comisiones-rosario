@@ -190,15 +190,16 @@ def nueva_comision(request):
         monto = request.POST.get('monto') or 0
 
         Comision.objects.create(
-            fecha_viaje=fecha_sel,
-            cliente=cliente_obj,
-            tipo=request.POST.get('tipo', 'SOBRE'),
-            direccion_entrega=direccion,
-            hora_limite=hora,
-            monto=monto,
-            pagado=('pagado' in request.POST),
-            notas=request.POST.get('notas', '')
-        )
+          fecha_viaje=fecha_sel,
+          cliente=cliente_obj,
+          destinatario_rosario=request.POST.get('destinatario_rosario', '').strip(),
+          tipo=request.POST.get('tipo', 'SOBRE'),
+          direccion_entrega=direccion,
+          hora_limite=hora,
+          monto=monto,
+          pagado=('pagado' in request.POST),
+          notas=request.POST.get('notas', '')
+      )
         return redirigir_con_fecha(fecha_sel)
 
     clientes_dirs = {c.nombre: (c.direccion_frecuente or '') for c in clientes}
@@ -232,6 +233,7 @@ def editar_comision(request, comision_id):
         comision.monto = request.POST.get('monto') or 0
         comision.pagado = ('pagado' in request.POST)
         comision.notas = request.POST.get('notas', '')
+        comision.destinatario_rosario = request.POST.get('destinatario_rosario', '').strip()
         comision.save()
         return redirigir_con_fecha(comision.fecha_viaje)
 

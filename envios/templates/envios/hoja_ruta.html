@@ -145,7 +145,7 @@
 
         <div class="direccion">{{ item.direccion_entrega }}</div>
         <div class="cliente-row">
-            <span>👤 <strong>{{ item.cliente.nombre }}</strong></span>
+            <span>👤 <strong>{{ item.cliente.nombre }}</strong>{% if item.destinatario_rosario %} → 🏢 <strong>{{ item.destinatario_rosario }}</strong>{% endif %}</span>
             <span class="tipo-pill tipo-{{ item.tipo }}">
                 {% if item.tipo == 'SOBRE' %}📄 Sobre{% elif item.tipo == 'BULTO' %}📦 Carga{% else %}🏛️ Trámite{% endif %}
             </span>

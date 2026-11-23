@@ -46,8 +46,8 @@
         </div>
 
         <div class="campo">
-            <label>👤 Cliente</label>
-            <input type="text" id="input-cliente" name="cliente_nombre" list="lista-clientes" placeholder="Ej: Estudio Pérez" value="{{ comision.cliente.nombre|default:'' }}" required>
+            <label>👤 Cliente Firmat</label>
+            <input type="text" id="input-cliente" name="cliente_nombre" list="lista-clientes" placeholder="Ej: Estudio Pérez (quien envía)" value="{{ comision.cliente.nombre|default:'' }}" required>
             <datalist id="lista-clientes">
                 {% for c in clientes %}
                     <option value="{{ c.nombre }}" data-direccion="{{ c.direccion_frecuente|default:'' }}">
@@ -56,8 +56,13 @@
         </div>
 
         <div class="campo">
+            <label>🏢 Cliente Rosario (destinatario)</label>
+            <input type="text" id="input-destinatario" name="destinatario_rosario" placeholder="Ej: Friorep / Juan García" value="{{ comision.destinatario_rosario|default:'' }}">
+        </div>
+
+        <div class="campo">
             <label>📍 Dirección en Rosario</label>
-            <input type="text" id="input-direccion" name="direccion_entrega" placeholder="Ej: Córdoba 1450" value="{{ comision.direccion_entrega|default:'' }}" required>
+            <input type="text" id="input-direccion" name="direccion_entrega" placeholder="Ej: España 2730" value="{{ comision.direccion_entrega|default:'' }}" required>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -118,29 +123,37 @@ function capitalizar(texto) {
     return texto.replace(/\b\w/g, function(letra) { return letra.toUpperCase(); });
 }
 
-function separarClienteYDireccion(frase) {
-    // Limpia "cliente " al inicio si el usuario lo dijo
+function separarDatosVoz(frase) {
     let limpia = frase.replace(/^cliente\s+/i, '').replace(/\.$/, '').replace(/\s+\./g, '.').trim();
+    let clienteFirmat = '';
+    let clienteRosario = '';
+    let direccion = '';
 
-    // 1. Si dijo separador explicito ("direccion", "en", "para", "calle", "avenida", "bv", "boulevard" o coma)
-    const matchSeparador = limpia.match(/^(.+?)(?:,|\s+(?:dirección|direccion|para|en|a)\s+|\s+(?=(?:av\.?|avenida|bv\.?|boulevard|calle|pasaje|pje\.?)\s+))(.+)$/i);
-    if (matchSeparador) {
-        return {
-            cliente: capitalizar(matchSeparador.item ? matchSeparador[1].trim() : matchSeparador[1].trim()),
-            direccion: capitalizar(matchSeparador[2].trim())
-        };
+    // 1. Extraer direccion al final (separada por "direccion", "en", o calle + altura)
+    const matchDir = limpia.match(/^(.+?)(?:,|\s+(?:dirección|direccion|en)\s+|\s+(?=(?:av\.?|avenida|bv\.?|boulevard|calle|pasaje|pje\.?)\s+))([a-záéíóúñ0-9\s\.]+)$/i);
+    let parteClientes = limpia;
+
+    if (matchDir) {
+        parteClientes = matchDir.item(1).trim();
+        direccion = capitalizar(matchDir.item(2).trim());
+    } else {
+        const matchCalleNum = limpia.match(/^(.+?)\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+){0,2}\s+\d{1,5}(?:\s*bis)?)$/i);
+        if (matchCalleNum) {
+            parteClientes = matchCalleNum.item(1).trim();
+            direccion = capitalizar(matchCalleNum.item(2).trim());
+        }
     }
 
-    // 2. Si dijo de corrido "Friorep España 2730" o "Estudio Perez Cordoba 1450" (detecta palabra + numero al final)
-    const matchCalleNumero = limpia.match(/^(.+?)\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+){0,2}\s+\d{1,5}(?:\s*bis)?)$/i);
-    if (matchCalleNumero) {
-        return {
-            cliente: capitalizar(matchCalleNumero[1].trim()),
-            direccion: capitalizar(matchCalleNumero[2].trim())
-        };
+    // 2. Si dijo "Estudio Perez para Friorep" o "Estudio Perez a Friorep", separa Cliente Firmat y Cliente Rosario
+    const matchDest = parteClientes.match(/^(.+?)\s+(?:para|a|destinatario)\s+(.+)$/i);
+    if (matchDest) {
+        clienteFirmat = capitalizar(matchDest.item(1).trim());
+        clienteRosario = capitalizar(matchDest.item(2).trim());
+    } else {
+        clienteFirmat = capitalizar(parteClientes);
     }
 
-    return { cliente: capitalizar(limpia), direccion: '' };
+    return { clienteFirmat: clienteFirmat, clienteRosario: clienteRosario, direccion: direccion };
 }
 
 function dictarTodo() {
@@ -148,6 +161,7 @@ function dictarTodo() {
     const btn = document.getElementById('btn-voz-todo');
     const estado = document.getElementById('estado-voz');
     const inputCliente = document.getElementById('input-cliente');
+    const inputDestinatario = document.getElementById('input-destinatario');
     const inputDireccion = document.getElementById('input-direccion');
 
     if (!SpeechRecognition) {
@@ -164,23 +178,22 @@ function dictarTodo() {
         btn.style.background = '#fee2e2';
         btn.style.color = '#b91c1c';
         btn.style.borderColor = '#dc2626';
-        btn.textContent = '⏹️ Escuchando... Decí "Cliente y Dirección"';
+        btn.textContent = '⏹️ Escuchando... Ej: "Pérez para Friorep en España 2730"';
         estado.textContent = "";
     };
 
     recognition.onresult = function(event) {
         const texto = event.results.item(0).item(0).transcript;
-        const datos = separarClienteYDireccion(texto);
+        const datos = separarDatosVoz(texto);
 
-        inputCliente.value = datos.cliente;
+        if (datos.clienteFirmat) inputCliente.value = datos.clienteFirmat;
+        if (datos.clienteRosario) inputDestinatario.value = datos.clienteRosario;
         if (datos.direccion) {
             inputDireccion.value = datos.direccion;
-            estado.textContent = "✅ Cliente y dirección cargados";
+            estado.textContent = "✅ Datos cargados por voz";
         } else {
             autocompletarDireccionCliente();
-            estado.textContent = inputDireccion.value
-                ? "✅ Cliente cargado y dirección habitual completada"
-                : "✅ Cliente cargado. Completá o dictá la dirección";
+            estado.textContent = "✅ Cliente cargado";
         }
     };
 
