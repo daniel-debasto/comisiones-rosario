@@ -187,6 +187,8 @@
             <details class="menu-puntos">
                 <summary>⋮</summary>
                 <div class="menu-dropdown">
+                    <a href="{{ item.url_maps }}" class="menu-item">🗺️ Google Maps</a>
+                    <a href="{{ item.url_waze }}" class="menu-item">🚗 Waze</a>
                     <a href="{% url 'editar_comision' item.id %}" class="menu-item">✏️ Editar envío</a>
                     {% if fecha_sel == hoy %}
                         <form method="POST" action="{% url 'posponer_manana' item.id %}" style="margin: 0;">
@@ -228,15 +230,6 @@
             {% else %}
                 <span class="badge estado-pago-no">Falta cobrar</span>
             {% endif %}
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-            <a href="{{ item.url_maps }}" class="btn btn-nav">
-                🗺️ Google Maps
-            </a>
-            <a href="{{ item.url_waze }}" class="btn btn-nav">
-                🚗 Waze
-            </a>
         </div>
 
         <form method="POST" action="{% url 'marcar_entregado' item.id %}" class="acciones-form">
