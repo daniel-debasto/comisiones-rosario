@@ -13,7 +13,7 @@
     <link rel="manifest" href="{% static 'envios/manifest.json' %}">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f8fafc; color: #0f172a; padding-bottom: 40px; }
+        body { background-color: #f8fafc; color: #0f172a; padding-bottom: 88px; }
         .navbar { background-color: #0f172a; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .navbar-title { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.3px; }
         .btn-nueva { background-color: #2563eb; color: white; text-decoration: none; padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; }
@@ -63,16 +63,68 @@
         .tachado { text-decoration: line-through; font-weight: 700; color: #475569; }
         .acciones-ruta-1 { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 16px; }
         .acciones-ruta-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+                .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            align-items: center;
+            padding: 8px 12px;
+            box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
+            z-index: 100;
+        }
+        .bottom-item {
+            text-decoration: none;
+            color: #64748b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            gap: 2px;
+            position: relative;
+        }
+        .bottom-item.activa {
+            color: #0f172a;
+        }
+        .bottom-item-icon {
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+        .bottom-btn-nueva {
+            background: #2563eb;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.88rem;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+        }
+        .badge-deuda-dot {
+            background: #dc2626;
+            color: white;
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 1px 6px;
+            border-radius: 10px;
+            margin-left: 3px;
+        }
   </style>
 </head>
 <body>
 
-<nav class="navbar">
+<nav class="navbar" style="justify-content: center;">
     <span class="navbar-title">🚚 Comisiones Debasto</span>
-    <a href="{% url 'nueva_comision' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="btn-nueva">+ Nueva</a>
 </nav>
 
-<div class="fecha-bar">
+<div class="fecha-bar" style="justify-content: center;">
     <div class="fecha-nav">
         <a href="{% url 'hoja_de_ruta' %}?fecha={{ ayer|date:'Y-m-d' }}" class="fecha-flecha">◀</a>
         <form method="GET" action="{% url 'hoja_de_ruta' %}" class="fecha-centro" style="margin: 0;">
@@ -82,13 +134,11 @@
         <a href="{% url 'hoja_de_ruta' %}?fecha={{ manana|date:'Y-m-d' }}" class="fecha-flecha">▶</a>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 6px;">
-        {% if fecha_sel != hoy %}
-            <a href="{% url 'hoja_de_ruta' %}?fecha={{ hoy|date:'Y-m-d' }}" class="btn-hoy-chip">Hoy</a>
-        {% endif %}
-        <a href="{% url 'cuentas_corrientes' %}" class="fecha-pill deudas">💰 Deudas ({{ deudores_count }})</a>
-    </div>
+    {% if fecha_sel != hoy %}
+        <a href="{% url 'hoja_de_ruta' %}?fecha={{ hoy|date:'Y-m-d' }}" class="btn-hoy-chip">Hoy</a>
+    {% endif %}
 </div>
+
 
 <div class="container">
 
@@ -243,6 +293,23 @@
     {% endif %}
 
 </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="{% url 'hoja_de_ruta' %}?fecha={{ hoy|date:'Y-m-d' }}" class="bottom-item activa">
+        <span class="bottom-item-icon">🚚</span>
+        <span>Ruta</span>
+    </a>
+
+    <a href="{% url 'nueva_comision' %}?fecha={{ fecha_sel|date:'Y-m-d' }}" class="bottom-btn-nueva">
+        ➕ Nueva
+    </a>
+
+    <a href="{% url 'cuentas_corrientes' %}" class="bottom-item">
+        <span class="bottom-item-icon">💰</span>
+        <span>Deudas{% if deudores_count > 0 %}<span class="badge-deuda-dot">{{ deudores_count }}</span>{% endif %}</span>
+    </a>
+</nav>
 
 <script>
 document.addEventListener('click', function(e) {
