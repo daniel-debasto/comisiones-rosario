@@ -285,7 +285,7 @@
                 <span class="badge {% if item.pagado %}estado-pago-si{% else %}estado-pago-no{% endif %}">
                     {% if item.pagado %}Cobrado{% else %}Debe{% endif %}
                 </span>
-                <a href="https://whatsapp.com{{ item.cliente.nombre|urlencode }},%20ya%20realic%C3%A9%20la%20entrega%20en%20{{ item.direccion_entrega|urlencode }}." class="btn-mini">📲</a>
+                <button type="button" class="btn-mini" data-cliente="{{ item.cliente.nombre }}" data-dir="{{ item.direccion_entrega }}" onclick="enviarWhatsApp(this)">📲</button>
                 <a href="{% url 'editar_comision' item.id %}" class="btn-mini">✏️</a>
             </div>
         </div>
@@ -317,6 +317,12 @@ document.addEventListener('click', function(e) {
         if (!menu.contains(e.target)) menu.removeAttribute('open');
     });
 });
+function cobrarWhatsApp(btn) {
+    const cliente = btn.getAttribute('data-cliente');
+    const total = btn.getAttribute('data-total');
+    const texto = encodeURIComponent('Hola ' + cliente + ', te paso el resumen de comisiones pendientes por $' + total + '. ¡Gracias!');
+    window.open('https://api.whatsapp.' + 'com/send?text=' + texto, '_blank');
+}
 </script>
 </body>
 </html>
