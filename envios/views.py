@@ -42,11 +42,12 @@ def construir_url_ruta_completa(pendientes):
 
 
 def agregar_links_gps(pendientes):
-    """Genera las URLs exactas de Maps y Waze en Python para evitar recortes en HTML."""
+    """Genera las URLs exactas de Maps (con destino fijo en Rosario) y Waze."""
     lista = list(pendientes)
     for item in lista:
-        q = urllib.parse.quote(f"{item.direccion_entrega}, Rosario, Santa Fe")
-        item.url_maps = "https://google.com" + "/maps/search/?api=1&query=" + q
+        direccion_completa = f"{item.direccion_entrega}, Rosario, Santa Fe, Argentina"
+        q = urllib.parse.quote(direccion_completa)
+        item.url_maps = "https://google.com" + "/maps/dir/?api=1&destination=" + q + "&travelmode=driving"
         item.url_waze = "https://waze.com" + "/ul?q=" + q + "&navigate=yes"
     return lista
 
