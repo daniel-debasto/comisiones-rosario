@@ -317,11 +317,11 @@ document.addEventListener('click', function(e) {
         if (!menu.contains(e.target)) menu.removeAttribute('open');
     });
 });
-function cobrarWhatsApp(btn) {
+function enviarWhatsApp(btn) {
     const cliente = btn.getAttribute('data-cliente');
-    const total = btn.getAttribute('data-total');
-    const texto = encodeURIComponent('Hola ' + cliente + ', te paso el resumen de comisiones pendientes por $' + total + '. ¡Gracias!');
-    window.open('https://api.whatsapp.' + 'com/send?text=' + texto, '_blank');
+    const dir = btn.getAttribute('data-dir');
+    const texto = encodeURIComponent('Hola ' + cliente + ', ya realicé la entrega en ' + dir + '.');
+    window.location.href = 'whatsapp://send?text=' + texto;
 }
 </script>
 </body>
